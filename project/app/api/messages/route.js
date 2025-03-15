@@ -1,21 +1,21 @@
 let messages = [];
 
-export default function handler(req, res) {
-    if (req.method === "GET") {
-        return res.status(200).json({ messages });
+export async function GET(req) {
+    return Response.json({ messages });
+}
+
+export async function POST(req, res) {
+    const { text, sender } = await req.json();
+    const newMessage = { text, sender, timestamp: new Date() };
+    // messages.push(newMessage);
+    // console.log(newMessage);
+
+    // Get the Socket.IO instance from global scope
+    if (res.socket?.server?.io) {
+        res.socket.server.io.emit("sendMessage", newMessage);
+    } else {
+        console.error("❌ Socket.IO instance not found");
     }
 
-    if (req.method === "POST") {
-        const { text, sender } = req.body;
-        const newMessage = { text, sender, timestamp: new Date() };
-        messages.push(newMessage);
-
-        if (res.socket?.server?.io) {
-            res.socket.server.io.emit("receiveMessage", newMessage);
-        }
-
-        return res.status(201).json(newMessage);
-    }
-
-    res.status(405).json({ error: "Method not allowed" });
+    return Response.json(newMessage, { status: 201 });
 }

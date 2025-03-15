@@ -1,17 +1,30 @@
-let messages = [];
+// import { Server } from "socket.io";
 
-export async function GET(req) {
-    return Response.json({ messages });
-}
+// export default function handler(req, res) {
+//     if (!res.socket.server.io) {
+//         console.log("⚡ Initializing Socket.IO Server...");
+//         const io = new Server(res.socket.server, {
+//             path: "/api/socket",
+//             cors: {
+//                 origin: "http://localhost:3000", // Ensure frontend can connect
+//                 methods: ["GET", "POST"],
+//             },
+//         });
 
-export async function POST(req) {
-    const { text, sender } = await req.json();
-    const newMessage = { text, sender, timestamp: new Date() };
-    messages.push(newMessage);
+//         io.on("connection", (socket) => {
+//             console.log(`✅ New connection: ${socket.id}`);
 
-    if (global.io) {
-        global.io.emit("receiveMessage", newMessage);
-    }
+//             socket.on("sendMessage", (msg) => {
+//                 io.emit("receiveMessage", msg); // Broadcast message to all clients
+//             });
 
-    return Response.json(newMessage, { status: 201 });
-}
+//             socket.on("disconnect", () => {
+//                 console.log(`❌ Disconnected: ${socket.id}`);
+//             });
+//         });
+
+//         res.socket.server.io = io; // Attach to server
+//     }
+
+//     res.end();
+// }

@@ -1,16 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 import axios from "axios";
 
-let socket;
-
 export default function Chat() {
     const [message, setMessage] = useState("");
+    var socket = useRef(null);
     const [messages, setMessages] = useState([]);
 
     useEffect(() => {
-        socket = io();
+        socket = io("http://localhost:3001", {
+            transports: ['websocket']
+        }); // Connect to WebSocket server
 
         axios.get("/api/messages")
             .then((res) => setMessages(res.data.messages))
@@ -32,7 +33,8 @@ export default function Chat() {
         const newMessage = { text: message, sender: "User" };
 
         try {
-            await axios.post("/api/messages", newMessage);
+            // await axios.post("/api/messages", newMessage);
+            socket.emit("sendMessage", newMessage);
             setMessage("");
         } catch (err) {
             console.error("Error sending message:", err);
