@@ -7,21 +7,43 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: "http://localhost:3000",
-        methods: ['GET', "POST"]
+        methods: ["GET", "POST"]
     },
 });
 
+const users = {};
+
 io.on("connection", (socket) => {
-    console.log(`connected: ${socket.id}`);
+    console.log(`User connected: ${socket.id}`);
+
+    socket.on("registerUser", (userId) => {
+        users[userId] = socket.id;
+        console.log(`User registered: ${userId} -> ${socket.id}`);
+    });
 
     socket.on("sendMessage", (data) => {
-        console.log(`Received message: ${data.text}`);
-        // const {transferTo} = data;
-        io.emit("receiveMessage", data);
+        const { text, to } = data;
+        const recipientSocketId = users[to];
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit("receiveMessage", {
+                text,
+                from: socket.id,
+            });
+            console.log(`Message sent to ${to} (${recipientSocketId}): ${text}`);
+        } else {
+            console.log(`User ${to} not found`);
+        }
     });
 
     socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.id}`);
+        for (const userId in users) {
+            if (users[userId] === socket.id) {
+                delete users[userId];
+                break;
+            }
+        }
     });
 });
 

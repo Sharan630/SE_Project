@@ -1,18 +1,14 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import io from "socket.io-client";
 import axios from "axios";
 
 export default function Chat() {
     const [message, setMessage] = useState("");
-    var socket = useRef(null);
+    var socket = useMemo(() => io("http://localhost:3001"));
     const [messages, setMessages] = useState([]);
 
     useEffect(() => {
-        socket = io("http://localhost:3001", {
-            transports: ['websocket']
-        }); // Connect to WebSocket server
-
         axios.get("/api/messages")
             .then((res) => setMessages(res.data.messages))
             .catch((err) => console.error(err));
