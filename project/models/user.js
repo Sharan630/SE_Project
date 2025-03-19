@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema({
     bio: { type: String, trim: true },
     skills: { type: [String], default: [] },
     experience: { type: Number, default: 0 },
+    phone: { type: String, trim: true },
     availability: {
         type: [{ day: String, timeSlots: [String] }],
         default: []
