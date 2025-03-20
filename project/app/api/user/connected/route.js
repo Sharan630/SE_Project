@@ -1,35 +1,23 @@
 import connectdb from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
-import bcrypt from "bcrypt";
 
-
-export async function POST(req) {
+export async function GET(req, { params }) {
     try {
 
-        await connectdb();
+        const { email } = await params;
 
-        const { name, skills, imageLink, bio, phone, email } = await req.json();
-        if (!name) {
+        if (!email) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
-        const mentee = await User.findOne({ email, role: "mentee" });
-        if (!mentee) {
-            return NextResponse.json({ message: "Mentee not found" }, { status: 404 });
-        }
+        await connectdb();
 
-        if (name) mentee.name = name;
-        if (skills) mentee.skills = skills;
-        if (imageLink) mentee.picture = imageLink;
-        if (bio) mentee.bio = bio;
-        if (phone) mentee.phone = phone;
-
-        await mentee.save();
+        const users = await User.findOne({ email: email }).populate('connected');
 
         return NextResponse.json({
             message: "Profile updated successfully",
-            mentee
+            users
         }, { status: 200 });
 
 
