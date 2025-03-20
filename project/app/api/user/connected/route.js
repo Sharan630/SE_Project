@@ -15,9 +15,8 @@ export async function GET(req, { params }) {
 
         const users = await User.findOne({ email: email }).populate('connected');
 
-        return NextResponse.json({
+        return NextResponse.json(users, {
             message: "Profile updated successfully",
-            users
         }, { status: 200 });
 
 

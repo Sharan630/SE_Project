@@ -2,12 +2,11 @@ import connectdb from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
 
-export async function DELETE(req) {
+export async function DELETE(req, {params}) {
     try {
         await connectdb();
 
-        // ✅ Step 1: Extract email & admin role from request body
-        const { email } = await req.json();
+        const { email } = await params;
 
         if (!email) {
             return NextResponse.json({ message: "User email are required" }, { status: 400 });

@@ -1,6 +1,7 @@
 import connectdb from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
+import Notification from "@/models/notification";
 
 export async function POST(req) {
     try {
@@ -16,7 +17,7 @@ export async function POST(req) {
         const mentee = await User.findOne({ email: menteeEmail, role: "mentee" });
 
         if (!mentor || !mentee) {
-            return NextResponse.json({ message: "Mentor or mentee not found" }, { status: 404 });
+            return NextResponse.json({ message: "Mentor or mentee or notification not found" }, { status: 404 });
         }
 
         if (mentor.connectedWith.includes(mentee._id) && mentee.connectedWith.includes(mentor._id)) {
