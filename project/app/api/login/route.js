@@ -1,4 +1,4 @@
-import db from "@/database/connectdb";
+import connectDB from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
 import bcrypt from "bcrypt";
@@ -7,7 +7,7 @@ import bcrypt from "bcrypt";
 export async function POST(req) {
     try {
 
-        await db.connect();
+        await connectDB();
 
         const { email, pass } = await req.json();
         if (!email || !pass) {
