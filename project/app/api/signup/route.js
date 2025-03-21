@@ -14,7 +14,7 @@ export async function POST(req) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
-        const hashedPassword = await bcrypt.hash(pass);
+        const hashedPassword = await bcrypt.hash(pass, 10);
 
         const user = new User({
             email: email,
