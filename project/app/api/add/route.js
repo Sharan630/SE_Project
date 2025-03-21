@@ -20,12 +20,12 @@ export async function POST(req) {
             return NextResponse.json({ message: "Mentor or mentee or notification not found" }, { status: 404 });
         }
 
-        if (mentor.connectedWith.includes(mentee._id) && mentee.connectedWith.includes(mentor._id)) {
+        if (mentor.connected.includes(mentee._id) && mentee.connected.includes(mentor._id)) {
             return NextResponse.json({ message: "Already connected" }, { status: 400 });
         }
 
-        mentor.connectedWith.push(mentee._id);
-        mentee.connectedWith.push(mentor._id);
+        mentor.connected.push(mentee._id);
+        mentee.connected.push(mentor._id);
 
         await mentor.save();
         await mentee.save();

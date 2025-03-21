@@ -22,6 +22,7 @@ export async function POST(req) {
         if (skills) mentee.skills = skills;
         if (imageLink) mentee.picture = imageLink;
         if (bio) mentee.bio = bio;
+        if (phone) mentee.phone = phone;
 
         await mentee.save();
 

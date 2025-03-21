@@ -25,6 +25,7 @@ export async function POST(req) {
         if (experience !== undefined) mentor.experience = experience;
         if (availability) mentor.availability = availability;
         if (bio) mentor.bio = bio;
+        if (phone) mentor.phone = phone;
 
         await mentor.save();
 
