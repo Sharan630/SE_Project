@@ -412,7 +412,7 @@ const Home = () => {
   </div>
 </section>
 
-
+     
       {/* Footer */}
       <footer className="bg-gray-100 text-gray-700 py-12">
   <div className="container mx-auto px-6 md:px-12 lg:px-20">
