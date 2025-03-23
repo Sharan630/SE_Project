@@ -1,5 +1,4 @@
 "use client";
-
 import { motion } from "framer-motion";
 import { FaMapMarkerAlt, FaLinkedin, FaGithub, FaTwitter } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
@@ -31,7 +30,7 @@ const MentorProfile = () => {
             {/* Background Image */}
             <div className="h-60 w-full">
                 <img
-                    src="/back.gif"
+                    src="/back.jpg"
                     alt="Background"
                     className="w-full h-full object-cover rounded-t-lg"
                 />
@@ -40,18 +39,19 @@ const MentorProfile = () => {
             {/* Profile Card */}
             <div className="relative bg-white shadow-lg rounded-b-lg px-6 pb-6 pt-16 sm:pt-20 md:pt-24">
                 {/* Profile Picture - Overlapping */}
-                <div className="absolute -top-14 sm:-top-16 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -top-14 sm:-top-16 left-60 transform -translate-x-1/2">
                     <img
-                        src="/images.jpg"
+                        src="/virat.jpg"
                         alt="Profile"
                         className="w-24 h-24 sm:w-40 sm:h-40  rounded-full border-4 border-slate-600 shadow-lg"
                     />
                 </div>
 
                 {/* Profile and Plan Container */}
-                <div className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-6">
+                {/* <div className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-6"> */}
+                <div className="flex flex-col sm:flex-row items-center justify-around mt-4 sm:mt-6">
                     {/* User Details */}
-                    <div className="text-center sm:text-left sm:mr-8">
+                    <div className="text-center sm:mb-60 sm:text-left sm:mr-8">
                         <h2 className="text-lg sm:text-2xl font-bold text-gray-900">{mentorData.name}</h2>
                         <p className="text-gray-600 text-sm sm:text-base">{mentorData.title}</p>
                         {/* Location & Social Links */}
@@ -63,7 +63,7 @@ const MentorProfile = () => {
                             <a href={`mailto:${mentorData.email}`} className="hover:text-gray-800"><MdEmail size={18} /></a>
                         </div>
                     </div>
-                    <div className="w-full max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow-sm sm:p-8 mt-4 sm:mt-0">
+                    <div className=" w-full max-w-sm  p-4 bg-white border border-gray-200 rounded-lg shadow-sm sm:p-8 mt-4 sm:mt-0">
                         <h5 className="mb-4 text-xl font-medium text-gray-500">Standard plan</h5>
                         <div className="flex items-baseline text-gray-900">
                             <span className="text-3xl font-semibold">$</span>
