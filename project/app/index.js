@@ -18,37 +18,42 @@ io.on("connection", async (socket) => {
     await connectDB();
     console.log(`User connected: ${socket.id}`);
 
-    socket.on("registerUser", async (userId) => {
-        const user = await User.findOne({ email: userId });
+    socket.on("registerUser", async (email) => {
+        console.log(email);
+        const user = await User.findOne({ email: email });
+        // console.log(user);
         if (!user) {
-            console.log(`⚠️ User ${userId} not found`);
+            console.log(`⚠️ User ${email} not found`);
             return;
         }
 
         user.socketId = socket.id;
         await user.save();
         // users[userId] = socket.id;
-        console.log(`User registered: ${userId} -> ${socket.id}`);
+        console.log(`User registered: ${email} -> ${socket.id}`);
     });
 
     socket.on("sendMessage", async (data) => {
-        const { text, to, from } = data;
-        const recipient = await User.findOne({ email: to });
+        const { content, to, from } = data;
+        // console.log(content, to, from);
+        const recipient = await User.findOne({ _id: to });
+        // console.log(recipient);
 
-        if (!recipient || !recipient.socketId) {
+        if (!recipient) {
             console.log(`⚠️ User ${to} not found or offline`);
             return;
         }
 
+        const message = new Message({ sender: from, receiver: to, content: content });
+        await message.save();
+
         if (recipient.socketId) {
             io.to(recipient.socketId).emit("receiveMessage", {
-                text, from
+                content, from
             });
-            const message = new Message({ sender: from, receiver: to, content: text });
-            await message.save();
-            console.log(`Message sent to ${to} (${recipient}): ${text}`);
+            console.log(`Message sent to ${to} (${recipient}): ${content}`);
         } else {
-            console.log(`User ${to} not found`);
+            console.log(`User ${to} is not registered`);
         }
     });
 

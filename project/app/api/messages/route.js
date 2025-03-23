@@ -2,11 +2,14 @@ import connectDB from "@/database/connectdb";
 import Message from "@/models/message";
 import { NextResponse } from "next/server";
 
-export async function GET(req) {
+export async function GET(req, { params }) {
     try {
+        const { sender, receiver } = await params;
+        console.log(sender, receiver);
 
         await connectDB();
-        const messages = await Message.find().sort({ timestamp: -1 }).limit(10);
+        const messages = await Message.findOne({ receiver: receiver, sender: sender }).sort({ timestamp: -1 }).limit(10);
+        console.log(messages);
         return NextResponse.json(messages, { status: 200 });
 
     } catch (e) {
@@ -16,9 +19,9 @@ export async function GET(req) {
 
 export async function POST(req, res) {
     try {
-        const { text, sender, receiver } = await req.json();
+        const { content, sender, receiver } = await req.json();
         const newMessage = new Message({
-            text,
+            content,
             sender,
             receiver
         });

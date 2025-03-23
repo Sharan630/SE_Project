@@ -6,6 +6,7 @@ export async function GET(req, { params }) {
     try {
 
         const { email } = await params;
+        // console.log(email);
 
         if (!email) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
@@ -14,8 +15,19 @@ export async function GET(req, { params }) {
         await connectdb();
 
         const users = await User.findOne({ email: email }).populate('connected');
+        // console.log(users.connected);
+        const data = users.connected.map((user) => {
+            return {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                picture: user.picture
+            }
+        })
+        // console.log(data);
 
-        return NextResponse.json(users, {
+        return NextResponse.json(data, {
             message: "Profile updated successfully",
         }, { status: 200 });
 

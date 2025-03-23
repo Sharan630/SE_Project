@@ -1,36 +1,66 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { io } from "socket.io-client";
 
 export default function ChatPage() {
     const [selectedChat, setSelectedChat] = useState(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [message, setMessage] = useState("");
-    const [messages, setMessages] = useState([]); // Store dynamic messages
+    const [messages, setMessages] = useState([]);
+    const [connections, setconnections] = useState([]);
+    const [socket, setSocket] = useState(null);
+    const [user_id, setuserid] = useState(null);
 
-    const chats = [
-        {
-            id: 1,
-            name: 'Luis1994',
-            message: 'Pick me at 9:00 AM',
-            img: 'https://w0.peakpx.com/wallpaper/845/658/HD-wallpaper-thala-dhoni-chennai-super-kings-ms-dhoni.jpg',
-        },
-        {
-            id: 2,
-            name: 'MERN Stack',
-            message: 'Lusi : Thanks Everyone',
-            img: 'https://w0.peakpx.com/wallpaper/845/658/HD-wallpaper-thala-dhoni-chennai-super-kings-ms-dhoni.jpg',
-        },
-        {
-            id: 3,
-            name: 'Javascript Indonesia',
-            message: 'Evan : Someone can fix this?',
-            img: 'https://w0.peakpx.com/wallpaper/845/658/HD-wallpaper-thala-dhoni-chennai-super-kings-ms-dhoni.jpg',
-        },
-    ];
+    useEffect(() => {
+
+        const socket = io('http://localhost:3001');
+        setSocket(socket);
+        // console.log(socket);
+
+        const fetch = async () => {
+            try {
+                const res2 = await axios.get('/api/user/apurav0711@gmail.com');
+                const res = await axios.get('/api/user/connected/apurav0711@gmail.com');
+                setconnections(res.data);
+                // console.log(res.data);
+                setuserid(res2.data._id);
+                console.log(res2.data._id);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        fetch();
+
+    }, [])
+
+    useEffect(() => {
+        if (socket) {
+            socket.on('receiveMessage', (message) => {
+                const ms = {
+                    content: message.content,
+                    sender: message.from,
+                    receiver: user_id
+                }
+                setMessages([...messages, ms]);
+            });
+        }
+    }, [])
 
     const handleChatClick = (chat) => {
         setSelectedChat(chat);
-        setMessages([]); // Reset messages for new chat
+        setMessages([]);
+
+        const fetch = async () => {
+
+            const res = await axios.get(`/api/messages/${user_id}/${chat._id}`)
+            // console.log(res.data[0].sender);
+            setMessages(res.data);
+        }
+
+        fetch();
+
         setIsProfileOpen(false);
     };
 
@@ -45,8 +75,9 @@ export default function ChatPage() {
 
     const sendMessage = () => {
         if (!message.trim()) return;
-        setMessages([...messages, { text: message, sender: "You" }]);
-        setMessage(""); // Clear input field
+        setMessages([...messages, { content: message, sender: user_id, receiver: selectedChat._id }]);
+        socket.emit('sendMessage', { content: message, from: user_id, to: selectedChat._id });
+        setMessage("");
     };
 
     return (
@@ -86,19 +117,19 @@ export default function ChatPage() {
                         />
                     </div>
 
-                    {chats.map((chat) => (
+                    {connections.map((chat) => (
                         <div
-                            key={chat.id}
-                            className={`flex flex-row py-4 px-2 items-center border-b cursor-pointer ${selectedChat?.id === chat.id ? 'bg-gray-200' : ''
+                            key={chat._id}
+                            className={`flex flex-row py-4 px-2 items-center border-b cursor-pointer ${selectedChat?._id === chat.id ? 'bg-gray-200' : ''
                                 }`}
                             onClick={() => handleChatClick(chat)}
                         >
                             <div className="w-1/4">
-                                <img src={chat.img} className="object-cover h-12 w-12 rounded-full" alt="" />
+                                <img src={chat.picture !== "" ? chat.picture : "404"} alt="No image" className="object-cover h-12 w-12 rounded-full" />
                             </div>
                             <div className="w-3/4">
-                                <div className="text-lg font-semibold">{chat.name}</div>
-                                <span className="text-gray-500">{chat.message}</span>
+                                <div className="text-lg font-semibold">{chat.name ? `${chat.name}` : `${chat.email}`}</div>
+                                {/* <span className="text-gray-500">{chat.message}</span> */}
                             </div>
                         </div>
                     ))}
@@ -118,11 +149,11 @@ export default function ChatPage() {
                                         ⬅
                                     </button>
                                     <img
-                                        src={selectedChat.img}
+                                        src={selectedChat?.picture || "/default-avatar.png"}
                                         className="object-cover h-10 w-10 rounded-full"
                                         alt=""
                                     />
-                                    <div className="ml-3 text-lg font-semibold">{selectedChat.name}</div>
+                                    <div className="ml-3 text-lg font-semibold">{selectedChat.name ? selectedChat.name : selectedChat.email}</div>
                                 </div>
                                 <button
                                     onClick={toggleProfile}
@@ -138,15 +169,15 @@ export default function ChatPage() {
                                     <div className="text-gray-500 text-center">Start a conversation</div>
                                 ) : (
                                     messages.map((msg, index) => (
-                                        <div key={index} className={`flex mb-4 ${msg.sender === "You" ? "justify-end" : "justify-start"}`}>
-                                            {msg.sender !== "You" && (
-                                                <img src={selectedChat.img} className="object-cover h-8 w-8 rounded-full" alt="" />
+                                        <div key={index} className={`flex mb-4 ${msg.sender.toString() === user_id ? "justify-end" : "justify-start"}`}>
+                                            {msg.sender !== user_id && (
+                                                <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover h-8 w-8 rounded-full" alt="" />
                                             )}
-                                            <div className={`py-3 px-4 rounded-lg text-white ${msg.sender === "You" ? "bg-blue-500" : "bg-gray-400"} mx-2`}>
-                                                {msg.text}
+                                            <div className={`py-3 px-4 rounded-lg text-white ${msg.sender.toString() === user_id ? "bg-blue-500" : "bg-gray-400"} mx-2`}>
+                                                {msg.content}
                                             </div>
-                                            {msg.sender === "You" && (
-                                                <img src={selectedChat.img} className="object-cover h-8 w-8 rounded-full" alt="" />
+                                            {msg.sender.toString() === user_id && (
+                                                <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover h-8 w-8 rounded-full" alt="" />
                                             )}
                                         </div>
                                     ))
@@ -183,7 +214,7 @@ export default function ChatPage() {
                                 ✖
                             </button>
                             <div className="text-xl font-semibold mb-3">Profile</div>
-                            <img src={selectedChat.img} className="object-cover rounded-xl w-32 h-32 mx-auto" alt="" />
+                            <img src={selectedChat?.picture} className="object-cover rounded-xl w-32 h-32 mx-auto" alt="" />
                             <div className="text-center mt-3">
                                 <div className="text-lg font-semibold">{selectedChat.name}</div>
                                 <div className="text-gray-500">Active now</div>
