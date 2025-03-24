@@ -130,7 +130,7 @@ const Form = () => {
         <div className="relative flex items-center justify-center min-h-[100vh] overflow-hidden  bg-[url('/registerbg.jpeg')] bg-cover bg-center">
             <div
                 className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: url('/bg.jpg') }}
+                // style={{ backgroundImage: url('/bg.jpg') }}
             ></div>
             <div className="relative bg-green-50 p-8 my-3  rounded-2xl shadow-2xl w-[90vw] max-w-2xl overflow-y-auto max-h-[140vh] scrollbar-hide">
                 <h2 className="text-3xl font-semibold mb-8 text-center text-gray-800">

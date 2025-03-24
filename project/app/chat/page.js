@@ -11,6 +11,7 @@ export default function ChatPage() {
     const [connections, setconnections] = useState([]);
     const [socket, setSocket] = useState(null);
     const [user_id, setuserid] = useState(null);
+    const email = sessionStorage.getItem('email');
 
     useEffect(() => {
 
@@ -20,8 +21,8 @@ export default function ChatPage() {
 
         const fetch = async () => {
             try {
-                const res2 = await axios.get('/api/user/apurav0711@gmail.com');
-                const res = await axios.get('/api/user/connected/apurav0711@gmail.com');
+                const res2 = await axios.get(`/api/user/${email}`);
+                const res = await axios.get(`/api/user/connected/${email}`);
                 setconnections(res.data);
                 // console.log(res.data);
                 setuserid(res2.data._id);

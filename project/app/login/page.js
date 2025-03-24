@@ -4,16 +4,17 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion } from "framer-motion";
-import "../component_css/login.css";
+// import "../component_css/login.css";
+import Cookies from "js-cookie";
 
 const Login = () => {
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [pass, setpass] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        const storedEmail = localStorage.getItem("email");
+        const storedEmail = Cookies.get("email");
         if (storedEmail) {
             router.push("/home");
             return;
@@ -27,17 +28,21 @@ const Login = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            if (email && password) {
+            if (email && pass) {
                 let res;
                 if (!isSignUp) {
-                    res = await axios.post("/api/login", { email, password });
+                    res = await axios.post("/api/login", { email, pass });
                 } else {
-                    res = await axios.post("/api/signup", { email, password });
+                    res = await axios.post("/api/signup", { email, pass });
                 }
+                console.log(res);
 
                 if ([200, 201, 202].includes(res.status)) {
-                    localStorage.setItem("email", email);
-                    localStorage.setItem("password", password);
+                    Cookies.set("email", email);
+                    Cookies.set("pass", pass);
+                    // console.log(Cookies.get("email"));
+                    // const email = Cookies.get("email");
+                    // console.log(email);
                     alert(isSignUp ? "Signed up successfully" : "Logged in successfully");
                     router.push("/home");
                 } else {
@@ -70,10 +75,10 @@ const Login = () => {
                 />
                 <input
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    name="password"
-                    placeholder="Enter your password"
+                    value={pass}
+                    onChange={(e) => setpass(e.target.value)}
+                    name="pass"
+                    placeholder="Enter your pass"
                     className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
                 <input

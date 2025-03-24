@@ -12,40 +12,40 @@ export default function EditProfile() {
     const router = useRouter();
     useEffect(() => {
 
-        const email = localStorage.getItem("email");
-        const name = localStorage.getItem("name");
-        const password = localStorage.getItem("password");
+        const email = Cookies.get("email");
+        const name = Cookies.get("name");
+        const password = Cookies.get("password");
         // const role = localStorage.getItem("role");
-        const phone = localStorage.getItem("phone");
-        const bio = localStorage.getItem("bio");
-        const skills = localStorage.getItem("skills");
-        const experience = localStorage.getItem("experience");
-        const availability = localStorage.getItem("availability");
-        const rating = localStorage.getItem("rating");
-        const connected = localStorage.getItem("connected");
-        const imagePath = localStorage.getItem("imagePath");
+        const phone = Cookies.get("phone");
+        const bio = Cookies.get("bio");
+        const skills = Cookies.get("skills");
+        const experience = Cookies.get("experience");
+        const availability = Cookies.get("availability");
+        const rating = Cookies.get("rating");
+        const connected = Cookies.get("connected");
+        const imagePath = Cookies.get("imagePath");
 
         if (!email) {
             router.push('/login');
             return;
         }
 
-        // if (!name) {
-        //   router.push('/form');
-        //   return;
-        // }
+        if (!name) {
+          router.push('/form');
+          return;
+        }
 
-        // const fetch = async () => {
-        //   try {
-        //     const res = await axios.get(/api/users/email/${email});
-        //     setUser(res.data);
-        //     console.log(res.data);
-        //   } catch (error) {
-        //     console.error(error);
-        //   }
-        // }
+        const fetch = async () => {
+          try {
+            const res = await axios.get(`/api/users/email/${email}`);
+            setUser(res.data);
+            console.log(res.data);
+          } catch (error) {
+            console.error(error);
+          }
+        }
 
-        // fetch();
+        fetch();
 
     }, [])
 
