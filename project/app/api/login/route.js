@@ -2,6 +2,7 @@ import connectDB from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
 import bcrypt from "bcrypt";
+import { io } from "socket.io-client";
 
 
 export async function POST(req) {
@@ -23,6 +24,9 @@ export async function POST(req) {
         const compare = bcrypt.compare(pass, user.password);
 
         if (compare) {
+            const socket = io('http://localhost:3001');
+            socket.emit('registerUser', email);
+
             return NextResponse.json({ message: "Correct parameters" }, { status: 200 });
         }
 

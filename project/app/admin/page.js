@@ -31,7 +31,7 @@ export default function AdminPanel() {
         className="bg-blue-600 h-screen p-5 text-white shadow-lg flex flex-col"
       >
         <div className="flex justify-between items-center">
-          <h2 className={`text-xl font-bold transition-all ${!isSidebarOpen ? "hidden" : ""}`}>
+          <h2 className={text-xl font-bold transition-all ${!isSidebarOpen ? "hidden" : ""}}>
             Admin
           </h2>
           <FaBars
@@ -51,7 +51,7 @@ export default function AdminPanel() {
               }`}
             >
               {item.icon}
-              <span className={`ml-4 transition-all ${!isSidebarOpen ? "hidden" : ""}`}>
+              <span className={ml-4 transition-all ${!isSidebarOpen ? "hidden" : ""}}>
                 {item.name}
               </span>
             </button>
