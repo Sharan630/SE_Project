@@ -363,7 +363,7 @@ const Login = () => {
                     }}
                 >
                     <div style={styles.formContent}>
-                        <h2 style={styles.greenHeading}>Sign in to Guidance Hub</h2>
+                        <h2 style={styles.greenHeading}>Log in to Guidance Hub</h2>
                         
                         <div style={styles.socialContainer}>
                             <a href="#" style={styles.socialButton}>
@@ -412,7 +412,7 @@ const Login = () => {
                                 type="submit"
                                 style={styles.submitButton}
                             >
-                                SIGN IN
+                                Log in
                             </button>
                         </form>
                     </div>
