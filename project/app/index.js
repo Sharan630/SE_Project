@@ -14,8 +14,9 @@ const io = new Server(server, {
     },
 });
 
+connectDB();
+
 io.on("connection", async (socket) => {
-    await connectDB();
     console.log(`User connected: ${socket.id}`);
 
     socket.on("registerUser", async (email) => {
@@ -55,6 +56,23 @@ io.on("connection", async (socket) => {
         } else {
             console.log(`User ${to} is not registered`);
         }
+    });
+
+    socket.on("call-user", ({ to, offer }) => {
+        console.log("Calling user:", to);
+        // console.log(offer);
+        console.log(`User ${socket.id}`);
+        io.emit("incoming-call", { from: socket.id, offer });
+    });
+
+    socket.on("answer-call", ({ to, answer }) => {
+        console.log("Answering call:", to);
+        io.emit("call-answered", { from: socket.id, answer });
+    });
+
+    socket.on("ice-candidate", ({ to, candidate }) => {
+        console.log("Sending ICE candidate:", to);
+        io.to(to).emit("ice-candidate", { from: socket.id, candidate });
     });
 
     socket.on("disconnect", async () => {
