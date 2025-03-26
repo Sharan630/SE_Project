@@ -52,9 +52,9 @@ export default function VideoCall() {
                     console.log("Call established from listener");
                 }
                 const confirmCall = window.confirm(`Incoming call from ${call.caller.userId}. Accept?`);
-                console.log(confirmCall);
+                // console.log(confirmCall);
                 if (confirmCall) {
-                    console.log("accepted");
+                    // console.log("accepted");
                     call.accept(acceptParams);
                     // call.localVideoView = localVideoRef.current;
                     // call.remoteVideoView = remoteVideoRef.current;

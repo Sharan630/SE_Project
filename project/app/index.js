@@ -4,7 +4,6 @@ import http from "http";
 import Message from "../models/message.js";
 import User from "../models/user.js";
 import connectDB from "../database/connectdb.js";
-import Cookies from "js-cookie";
 
 const app = express();
 const server = http.createServer(app);
@@ -19,61 +18,49 @@ connectDB();
 
 io.on("connection", async (socket) => {
     console.log(`User connected: ${socket.id}`);
-    const email = Cookies.get("email");
-    // console.log(email);
-    if (email) {
-        const user = await User.findOne({ email: email });
-        // console.log(user);
-        if (user) {
-            user.socketId = socket.id;
-            await user.save();
-            // users[userId] = socket.id;
-            console.log(`User registered: ${email} -> ${socket.id}`);
-        }
-    }
+    // Handle joining a specific chat room
+    socket.on("joinRoom", ({ user_id, roomId }) => {
+        if (!roomId) return;
 
-    socket.on("registerUser", async (email) => {
-        console.log(email);
-        const user = await User.findOne({ email: email });
-        // console.log(user);
-        if (!user) {
-            console.log(`User ${email} not found`);
+        // Actually join the room (previously was joining user_id instead)
+        socket.join(roomId);
+        console.log(`User ${user_id} joined room ${roomId}`);
+    });
+
+    // Handle sending messages
+    socket.on("sendMessage", (data) => {
+        const { content, to, from, roomId } = data;
+
+        if (!roomId) {
+            console.error("No roomId provided");
             return;
         }
 
-        user.socketId = socket.id;
-        await user.save();
-        // users[userId] = socket.id;
-        console.log(`User registered: ${email} -> ${socket.id}`);
+        // Save message to database
+        // const message = new Message({
+        //     sender: from,
+        //     receiver: to,
+        //     content: content,
+        //     room: roomId
+        // });
+        // await message.save();
+
+        // Send to SPECIFIC room only
+        io.to(roomId).emit("receiveMessage", {
+            content,
+            from,
+            to,
+            timestamp: new Date(),
+            // _id: message._id  // include DB ID
+        });
+
+        console.log(`Message sent to room ${roomId}: ${content}`);
     });
 
-    socket.on("sendMessage", async (data) => {
-        const { content, to, from } = data;
-        // console.log(content, to, from);
-        const recipient = await User.findOne({ _id: to });
-        // console.log(recipient);
-
-        if (!recipient) {
-            console.log(`User ${to} not found or offline`);
-            return;
-        }
-
-        const message = new Message({ sender: from, receiver: to, content: content });
-        await message.save();
-
-        if (recipient.socketId) {
-            io.to(recipient.socketId).emit("receiveMessage", {
-                content, from
-            });
-            console.log(`Message sent to ${to} (${recipient}): ${content}`);
-        } else {
-            console.log(`User ${to} is not registered`);
-        }
-    });
-
-    socket.on("disconnect", async () => {
+    // Handle disconnection
+    socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.id}`);
-        await User.findOneAndUpdate({ socketId: socket.id }, { socketId: null });
+        // await User.findOneAndUpdate({ socketId: socket.id }, { socketId: null });
     });
 });
 
