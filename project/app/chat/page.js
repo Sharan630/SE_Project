@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { io } from "socket.io-client";
+import Cookies from 'js-cookie';
+
+const socket = io('http://localhost:3001');
 
 export default function ChatPage() {
     const [selectedChat, setSelectedChat] = useState(null);
@@ -11,11 +14,9 @@ export default function ChatPage() {
     const [connections, setconnections] = useState([]);
     const [socket, setSocket] = useState(null);
     const [user_id, setuserid] = useState(null);
-    const email = sessionStorage.getItem('email');
+    const email = Cookies.get('email');
 
     useEffect(() => {
-
-        const socket = io('http://localhost:3001');
         setSocket(socket);
         // console.log(socket);
 

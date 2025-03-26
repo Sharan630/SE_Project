@@ -5,24 +5,28 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion } from "framer-motion";
 // import "../component_css/login.css";
-import Cookies from "js-cookie";
+// import sessionStorage from "js-cookie";
 
 const Login = () => {
-    const [email, setEmail] = useState("");
-    const [pass, setpass] = useState("");
-    const [isSignUp, setIsSignUp] = useState(false);
+    const [email, setItemEmail] = useState("");
+    const [pass, setItempass] = useState("");
+    const [fname, setItemfname] = useState(null);
+    const [lname, setItemlname] = useState(null);
+    const [phone, setItemphone] = useState(null);
+    const [isSignUp, setItemIsSignUp] = useState(false);
     const router = useRouter();
+    const [role, setrole] = useState('');
 
     useEffect(() => {
-        const storedEmail = Cookies.get("email");
+        const storedEmail = sessionStorage.getItem("email");
         if (storedEmail) {
-            router.push("/home");
+            // router.push("/home");
             return;
         }
     }, [router]);
 
     const toggleForm = () => {
-        setIsSignUp((prev) => !prev);
+        setItemIsSignUp((prev) => !prev);
     };
 
     const handleSubmit = async (event) => {
@@ -33,15 +37,18 @@ const Login = () => {
                 if (!isSignUp) {
                     res = await axios.post("/api/login", { email, pass });
                 } else {
-                    res = await axios.post("/api/signup", { email, pass });
+                    res = await axios.post("/api/signup", { email, pass, role });
                 }
-                console.log(res);
+                // console.log(res);
 
                 if ([200, 201, 202].includes(res.status)) {
-                    Cookies.set("email", email);
-                    Cookies.set("pass", pass);
-                    // console.log(Cookies.get("email"));
-                    // const email = Cookies.get("email");
+                    sessionStorage.setItem("email", email);
+                    sessionStorage.setItem("pass", pass);
+                    if (phone) sessionStorage.setItem("phone", phone);
+                    if (fname) sessionStorage.setItem("fname", fname);
+                    if (lname) sessionStorage.setItem("lname", lname);
+                    // console.log(sessionStorage.getItem("email"));
+                    // const email = sessionStorage.getItem("email");
                     // console.log(email);
                     alert(isSignUp ? "Signed up successfully" : "Logged in successfully");
                     router.push("/home");
@@ -69,18 +76,50 @@ const Login = () => {
                     type="email"
                     name="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setItemEmail(e.target.value)}
                     placeholder="Enter your email"
                     className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
                 <input
                     type="password"
                     value={pass}
-                    onChange={(e) => setpass(e.target.value)}
+                    onChange={(e) => setItempass(e.target.value)}
                     name="pass"
                     placeholder="Enter your pass"
                     className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
+                {isSignUp && <input
+                    type="text"
+                    name="fname"
+                    value={fname}
+                    onChange={(e) => setItemfname(e.target.value)}
+                    placeholder="Enter your Fname"
+                    className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />}
+                {isSignUp && <input
+                    type="text"
+                    name="lname"
+                    value={lname}
+                    onChange={(e) => setItemlname(e.target.value)}
+                    placeholder="Enter your Lname"
+                    className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />}
+                {isSignUp && <input
+                    type="role"
+                    name="role"
+                    value={role}
+                    onChange={(e) => setrole(e.target.value)}
+                    placeholder="Enter your role"
+                    className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />}
+                {isSignUp && <input
+                    type="number"
+                    name="phone"
+                    value={phone}
+                    onChange={(e) => setItemphone(e.target.value)}
+                    placeholder="Enter your Phone number"
+                    className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />}
                 <input
                     type="submit"
                     onClick={handleSubmit}
@@ -95,7 +134,7 @@ const Login = () => {
                 className="gradient relative z-0 text-white p-10 rounded-md shadow-lg w-96 bg-blue-500 flex flex-col items-center justify-center"
             >
                 <h1>Welcome Friend</h1>
-                {isSignUp ? <p>If you don’t have an account, sign up</p> : <p>Already have an account? Login</p>}
+                {!isSignUp ? <p>If you don’t have an account?</p> : <p>Already have an account?</p>}
                 <input
                     type="submit"
                     value={isSignUp ? "Login" : "Signup"}

@@ -4,6 +4,7 @@ import http from "http";
 import Message from "../models/message.js";
 import User from "../models/user.js";
 import connectDB from "../database/connectdb.js";
+import Cookies from "js-cookie";
 
 const app = express();
 const server = http.createServer(app);
@@ -18,13 +19,25 @@ connectDB();
 
 io.on("connection", async (socket) => {
     console.log(`User connected: ${socket.id}`);
+    const email = Cookies.get("email");
+    // console.log(email);
+    if (email) {
+        const user = await User.findOne({ email: email });
+        // console.log(user);
+        if (user) {
+            user.socketId = socket.id;
+            await user.save();
+            // users[userId] = socket.id;
+            console.log(`User registered: ${email} -> ${socket.id}`);
+        }
+    }
 
     socket.on("registerUser", async (email) => {
         console.log(email);
         const user = await User.findOne({ email: email });
         // console.log(user);
         if (!user) {
-            console.log(`⚠️ User ${email} not found`);
+            console.log(`User ${email} not found`);
             return;
         }
 
@@ -41,7 +54,7 @@ io.on("connection", async (socket) => {
         // console.log(recipient);
 
         if (!recipient) {
-            console.log(`⚠️ User ${to} not found or offline`);
+            console.log(`User ${to} not found or offline`);
             return;
         }
 
@@ -56,23 +69,6 @@ io.on("connection", async (socket) => {
         } else {
             console.log(`User ${to} is not registered`);
         }
-    });
-
-    socket.on("call-user", ({ to, offer }) => {
-        console.log("Calling user:", to);
-        // console.log(offer);
-        console.log(`User ${socket.id}`);
-        io.emit("incoming-call", { from: socket.id, offer });
-    });
-
-    socket.on("answer-call", ({ to, answer }) => {
-        console.log("Answering call:", to);
-        io.emit("call-answered", { from: socket.id, answer });
-    });
-
-    socket.on("ice-candidate", ({ to, candidate }) => {
-        console.log("Sending ICE candidate:", to);
-        io.to(to).emit("ice-candidate", { from: socket.id, candidate });
     });
 
     socket.on("disconnect", async () => {
