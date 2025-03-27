@@ -28,7 +28,7 @@ io.on("connection", async (socket) => {
     });
 
     // Handle sending messages
-    socket.on("sendMessage", (data) => {
+    socket.on("sendMessage", async (data) => {
         const { content, to, from, roomId } = data;
 
         if (!roomId) {
@@ -37,13 +37,13 @@ io.on("connection", async (socket) => {
         }
 
         // Save message to database
-        // const message = new Message({
-        //     sender: from,
-        //     receiver: to,
-        //     content: content,
-        //     room: roomId
-        // });
-        // await message.save();
+        const message = new Message({
+            sender: from,
+            receiver: to,
+            content: content,
+            room: roomId
+        });
+        await message.save();
 
         // Send to SPECIFIC room only
         io.to(roomId).emit("receiveMessage", {
