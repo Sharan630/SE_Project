@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SocketProvider from "./components/socket/socketProvider";
+// import SocketProvider from "./components/socket/socketProvider";
 // import { useEffect } from "react";
 
 const geistSans = Geist({
@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SocketProvider />
+        {/* <SocketProvider /> */}
         {children}
       </body>
     </html>
