@@ -1,4 +1,4 @@
-import db from "@/database/connectdb";
+import connectDB from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
 
@@ -6,8 +6,8 @@ import User from "@/models/user";
 export async function GET(req) {
     try {
 
-        await db.connect();
-        const users = await User.find({role: 'mentor'});
+        await connectDB();
+        const users = await User.find({ role: 'mentor' });
 
         return NextResponse.json(users, { status: 200 });
 

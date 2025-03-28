@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
+import axios from "axios";
 
 export default function FeedbackPage() {
     const [formData, setFormData] = useState({
@@ -35,13 +36,11 @@ export default function FeedbackPage() {
 
         try {
             // Mock API Call - Replace with actual API
-            // const response = await fetch("/api/feedback", {
-            //     method: "POST",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify(formData),
-            // });
+            const response = await axios.post("/api/feedback", {
+                formData
+            });
 
-            // const result = await response.json();
+            console.log(response.data); 
             setMessage("Thank you for your feedback!");
 
             setFormData({ name: "", email: "", rating: 5, comments: "" });
