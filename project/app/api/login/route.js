@@ -11,6 +11,7 @@ export async function POST(req) {
         await connectDB();
 
         const { email, pass } = await req.json();
+        console.log(email, pass);
         if (!email || !pass) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
@@ -30,7 +31,7 @@ export async function POST(req) {
             return NextResponse.json({ message: "Correct parameters" }, { status: 200 });
         }
 
-        return NextResponse.json({ message: "Wrong password" }, { status: 201 });
+        return NextResponse.json({ message: "Wrong password" }, { status: 205 });
 
 
     } catch (err) {
