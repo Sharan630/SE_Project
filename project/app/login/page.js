@@ -4,39 +4,42 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion } from "framer-motion";
+import "../component_css/login.css";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [name, setName] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
     const router = useRouter();
+    const [role, setrole] = useState('');
 
     useEffect(() => {
-        const storedEmail = localStorage.getItem("email");
+        const storedEmail = sessionStorage.getItem("email");
         if (storedEmail) {
-            router.push("/home");
+            // router.push("/home");
             return;
         }
     }, [router]);
 
     const toggleForm = () => {
-        setIsSignUp((prev) => !prev);
+        setItemIsSignUp((prev) => !prev);
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            if ((!isSignUp && email && password) || (isSignUp && email && password && name)) {
+            if (email && password) {
                 let res;
                 if (!isSignUp) {
-                    res = await axios.post("/api/login", { email, password });
+                    res = await axios.post("/api/login", { email, pass });
                 } else {
-                    res = await axios.post("/api/signup", { email, password, name });
+                    res = await axios.post("/api/signup", { email, password });
                 }
+                // console.log(res);
 
                 if ([200, 201, 202].includes(res.status)) {
                     localStorage.setItem("email", email);
+                    localStorage.setItem("password", password);
                     alert(isSignUp ? "Signed up successfully" : "Logged in successfully");
                     router.push("/home");
                 } else {
@@ -201,223 +204,51 @@ const Login = () => {
     };
 
     return (
-        <div style={styles.container}>
-            {/* Colored backgrounds similar to the image */}
-            <div style={styles.redBackground}></div>
-            <div style={styles.yellowBackground}></div>
-            
-            <div style={styles.formContainer}>
-                {/* Left Panel - Sign In */}
-                <motion.div
-                    animate={{ 
-                        x: isSignUp ? "-100%" : "0%",
-                        opacity: isSignUp ? 0 : 1
-                    }}
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 100 }}
-                    style={styles.greenPanel}
-                >
-                    <div style={styles.logo}>
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="24" height="24" rx="4" fill="white" fillOpacity="0.2"/>
-                            <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="white"/>
-                        </svg>
-                        <span style={{ marginLeft: "0.5rem", fontSize: "1.125rem", fontWeight: "bold" }}>Guidance Hub</span>
-                    </div>
-                    <h2 style={styles.heading}>Welcome Back!</h2>
-                    <p style={styles.paragraph}>To keep connected with us please login with your personal info</p>
-                    <button
-                        onClick={toggleForm}
-                        style={styles.button}
-                    >
-                        SIGN IN
-                    </button>
-                </motion.div>
+        <div className="login relative flex items-center justify-center min-h-screen overflow-hidden">
+            <motion.div
+                animate={{ x: isSignUp ? "100%" : "0%" }}
+                transition={{ type: "spring", stiffness: 100 }}
+                className="details relative bg-white p-10 shadow-lg rounded-md w-96 z-10"
+            >
+                <h2 className="text2">{isSignUp ? "Sign Up" : "Login"}</h2>
+                <input
+                    type="email"
+                    name="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    name="password"
+                    placeholder="Enter your password"
+                    className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <input
+                    type="submit"
+                    onClick={handleSubmit}
+                    value={isSignUp ? "Sign Up" : "Login"}
+                    className="bg-green-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </motion.div>
 
-                {/* Right Panel - Sign Up */}
-                <motion.div
-                    animate={{ 
-                        x: isSignUp ? "0%" : "100%",
-                        opacity: isSignUp ? 1 : 0
-                    }}
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 100 }}
-                    style={{
-                        ...styles.whitePanel,
-                        display: isSignUp ? "flex" : "none"
-                    }}
-                >
-                    <div style={styles.formContent}>
-                        <h2 style={styles.greenHeading}>Create Account</h2>
-                        
-                        <div style={styles.socialContainer}>
-                            <a href="#" style={styles.socialButton}>
-                                <span style={styles.socialText}>f</span>
-                            </a>
-                            <a href="#" style={styles.socialButton}>
-                                <span style={styles.socialText}>G+</span>
-                            </a>
-                            <a href="#" style={styles.socialButton}>
-                                <span style={styles.socialText}>in</span>
-                            </a>
-                        </div>
-                        
-                        <p style={styles.orText}>or use your email for registration:</p>
-                        
-                        <form onSubmit={handleSubmit}>
-                            <div style={styles.formGroup}>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Name"
-                                    style={styles.input}
-                                    required={isSignUp}
-                                />
-                                <span style={styles.inputIcon}>👤</span>
-                            </div>
-                            
-                            <div style={styles.formGroup}>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    style={styles.input}
-                                    required
-                                />
-                                <span style={styles.inputIcon}>✉️</span>
-                            </div>
-                            
-                            <div style={styles.formGroup}>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Password"
-                                    style={styles.input}
-                                    required
-                                />
-                                <span style={styles.inputIcon}>🔒</span>
-                            </div>
-                            
-                            <button
-                                type="submit"
-                                style={styles.submitButton}
-                            >
-                                SIGN UP
-                            </button>
-                        </form>
-                    </div>
-                </motion.div>
-
-                {/* Left Panel - Sign Up Mode */}
-                <motion.div
-                    animate={{ 
-                        x: isSignUp ? "0%" : "-100%",
-                        opacity: isSignUp ? 1 : 0
-                    }}
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 100 }}
-                    style={{
-                        ...styles.greenPanel,
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        display: isSignUp ? "flex" : "none"
-                    }}
-                >
-                    <div style={styles.logo}>
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="24" height="24" rx="4" fill="white" fillOpacity="0.2"/>
-                            <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="white"/>
-                        </svg>
-                        <span style={{ marginLeft: "0.5rem", fontSize: "1.125rem", fontWeight: "bold" }}>Guidance Hub</span>
-                    </div>
-                    <h2 style={styles.heading}>Welcome Back!</h2>
-                    <p style={styles.paragraph}>To keep connected with us please login with your personal info</p>
-                    <button
-                        onClick={toggleForm}
-                        style={styles.button}
-                    >
-                        SIGN IN
-                    </button>
-                </motion.div>
-
-                {/* Right Panel - Sign In Mode */}
-                <motion.div
-                    animate={{ 
-                        x: isSignUp ? "100%" : "0%",
-                        opacity: isSignUp ? 0 : 1
-                    }}
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 100 }}
-                    style={{
-                        ...styles.whitePanel,
-                        position: "absolute",
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        display: isSignUp ? "none" : "flex"
-                    }}
-                >
-                    <div style={styles.formContent}>
-                        <h2 style={styles.greenHeading}>Log in to Guidance Hub</h2>
-                        
-                        <div style={styles.socialContainer}>
-                            <a href="#" style={styles.socialButton}>
-                                <span style={styles.socialText}>f</span>
-                            </a>
-                            <a href="#" style={styles.socialButton}>
-                                <span style={styles.socialText}>G+</span>
-                            </a>
-                            <a href="#" style={styles.socialButton}>
-                                <span style={styles.socialText}>in</span>
-                            </a>
-                        </div>
-                        
-                        <p style={styles.orText}>or use your email account:</p>
-                        
-                        <form onSubmit={handleSubmit}>
-                            <div style={styles.formGroup}>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    style={styles.input}
-                                    required
-                                />
-                                <span style={styles.inputIcon}>✉️</span>
-                            </div>
-                            
-                            <div style={styles.formGroup}>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Password"
-                                    style={styles.input}
-                                    required
-                                />
-                                <span style={styles.inputIcon}>🔒</span>
-                            </div>
-                            
-                            <div style={styles.forgotPassword}>
-                                <a href="#">Forgot your password?</a>
-                            </div>
-                            
-                            <button
-                                type="submit"
-                                style={styles.submitButton}
-                            >
-                                Log in
-                            </button>
-                        </form>
-                    </div>
-                </motion.div>
-            </div>
+            <motion.div
+                animate={{ x: isSignUp ? "-100%" : "0%" }}
+                transition={{ type: "spring", stiffness: 100 }}
+                className="gradient relative z-0 text-white p-10 rounded-md shadow-lg w-96 bg-blue-500 flex flex-col items-center justify-center"
+            >
+                <h1>Welcome Friend</h1>
+                {isSignUp ? <p>If you don’t have an account, sign up</p> : <p>Already have an account? Login</p>}
+                <input
+                    type="submit"
+                    value={isSignUp ? "Login" : "Signup"}
+                    onClick={toggleForm}
+                    className="bg-white text-blue-500 p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white"
+                />
+            </motion.div>
         </div>
     );
 };

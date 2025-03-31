@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { io } from "socket.io-client";
 
@@ -8,75 +8,135 @@ export default function ChatPage() {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
-    const [connections, setconnections] = useState([]);
+    const [connections, setConnections] = useState([]);
     const [socket, setSocket] = useState(null);
-    const [user_id, setuserid] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [roomId, setRoomId] = useState(null);
+    const email = sessionStorage.getItem('email');
 
+    // Initialize socket and fetch user data
     useEffect(() => {
+        const newSocket = io('http://localhost:3001'
+        );
+        setSocket(newSocket);
 
-        const socket = io('http://localhost:3001');
-        setSocket(socket);
-        // console.log(socket);
-
-        const fetch = async () => {
+        const fetchData = async () => {
             try {
-                const res2 = await axios.get('/api/user/apurav0711@gmail.com');
-                const res = await axios.get('/api/user/connected/apurav0711@gmail.com');
-                setconnections(res.data);
-                // console.log(res.data);
-                setuserid(res2.data._id);
-                console.log(res2.data._id);
+                const [userRes, connectionsRes] = await Promise.all([
+                    axios.get(`/api/user/${email}`),
+                    axios.get(`/api/user/connected/${email}`)
+                ]);
+                setConnections(connectionsRes.data);
+                setUserId(userRes.data._id);
+                console.log(userRes.data._id);
+                console.log(connectionsRes.data);
             } catch (error) {
-                console.log(error);
+                console.error('Error fetching data:', error);
             }
-        }
+        };
 
-        fetch();
+        fetchData();
 
-    }, [])
+        return () => {
+            newSocket.disconnect();
+        };
+    }, [email]);
+
+    // Handle incoming messages
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleReceiveMessage = (message) => {
+            setMessages(prev => [...prev, {
+                content: message.content,
+                sender: message.from,
+                receiver: message.to,
+                // timestamp: message.timestamp || new Date()
+            }]);
+            // console.log(message);
+        };
+        // if (socket) {
+        // console.log("received");
+        socket.on('receiveMessage', handleReceiveMessage);
+        // }
+
+        return () => {
+            socket.off('receiveMessage', handleReceiveMessage);
+        };
+    }, [socket]);
+
+    // if (socket && roomId) {
+    //     socket.emit('joinRoom', {
+    //         user_id: userId,
+    //         roomId: roomId
+    //     });
+    // }
+
+    // Handle room joining when chat is selected
+    useEffect(() => {
+        if (!selectedChat?._id || !socket || !userId) return;
+
+        const newRoomId = [userId, selectedChat._id].sort().join('_');
+        setRoomId(newRoomId);
+
+        // Fetch message history
+        const fetchMessages = async () => {
+            try {
+                const res = await axios.get(`/api/messages/${userId}/${selectedChat._id}`);
+                setMessages(res.data);
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            }
+        };
+
+        fetchMessages();
+
+    }, [selectedChat, socket, userId]);
 
     useEffect(() => {
-        if (socket) {
-            socket.on('receiveMessage', (message) => {
-                const ms = {
-                    content: message.content,
-                    sender: message.from,
-                    receiver: user_id
-                }
-                setMessages([...messages, ms]);
-            });
-        }
-    }, [])
+        if (!socket || !roomId || !userId) return;
 
-    const handleChatClick = (chat) => {
+        // return () => {
+        //     socket.off('joinRoom', {
+        //         user_id: userId,
+        //         roomId: roomId
+        //     });
+        // }
+    }, [socket, roomId, userId])
+
+    const handleChatClick = useCallback((chat) => {
         setSelectedChat(chat);
-        setMessages([]);
-
-        const fetch = async () => {
-
-            const res = await axios.get(`/api/messages/${user_id}/${chat._id}`)
-            // console.log(res.data[0].sender);
-            setMessages(res.data);
-        }
-
-        fetch();
-
+        socket.emit('joinRoom', {
+            user_id: userId,
+            roomId: roomId
+        });
         setIsProfileOpen(false);
-    };
-
-    const toggleProfile = () => {
-        setIsProfileOpen(!isProfileOpen);
-    };
-
-    const goBack = () => {
-        setSelectedChat(null);
-        setIsProfileOpen(false);
-    };
+    }, []);
 
     const sendMessage = () => {
-        if (!message.trim()) return;
-        setMessages([...messages, { content: message, sender: user_id, receiver: selectedChat._id }]);
-        socket.emit('sendMessage', { content: message, from: user_id, to: selectedChat._id });
+        if (!message.trim() || !selectedChat || !roomId) return;
+        // console.log("reached")
+
+        socket.emit('joinRoom', {
+            user_id: userId,
+            roomId: roomId
+        });
+
+        // Optimistic update
+        setMessages(prev => [...prev, {
+            content: message,
+            sender: userId,
+            receiver: selectedChat._id,
+            // timestamp: new Date(),
+        }]);
+
+        socket.emit('sendMessage', {
+            content: message,
+            from: userId,
+            to: selectedChat._id,
+            roomId: roomId
+        });
+
         setMessage("");
     };
 
@@ -145,7 +205,7 @@ export default function ChatPage() {
                             {/* Chat Header */}
                             <div className="flex items-center justify-between p-3 bg-white border-b">
                                 <div className="flex items-center">
-                                    <button onClick={goBack} className="mr-3 md:hidden text-lg">
+                                    <button /*onClick={goBack}*/ className="mr-3 md:hidden text-lg">
                                         ⬅
                                     </button>
                                     <img
@@ -156,7 +216,7 @@ export default function ChatPage() {
                                     <div className="ml-3 text-lg font-semibold">{selectedChat.name ? selectedChat.name : selectedChat.email}</div>
                                 </div>
                                 <button
-                                    onClick={toggleProfile}
+                                    // onClick={toggleProfile}
                                     className="text-blue-500 hover:underline"
                                 >
                                     View Profile
@@ -169,14 +229,14 @@ export default function ChatPage() {
                                     <div className="text-gray-500 text-center">Start a conversation</div>
                                 ) : (
                                     messages.map((msg, index) => (
-                                        <div key={index} className={`flex mb-4 ${msg.sender.toString() === user_id ? "justify-end" : "justify-start"}`}>
-                                            {msg.sender !== user_id && (
+                                        <div key={index} className={`flex mb-4 ${msg.sender.toString() === userId ? "justify-end" : "justify-start"}`}>
+                                            {msg.sender !== userId && (
                                                 <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover h-8 w-8 rounded-full" alt="" />
                                             )}
-                                            <div className={`py-3 px-4 rounded-lg text-white ${msg.sender.toString() === user_id ? "bg-blue-500" : "bg-gray-400"} mx-2`}>
+                                            <div className={`py-3 px-4 rounded-lg text-white ${msg.sender.toString() === userId ? "bg-blue-500" : "bg-gray-400"} mx-2`}>
                                                 {msg.content}
                                             </div>
-                                            {msg.sender.toString() === user_id && (
+                                            {msg.sender.toString() === userId && (
                                                 <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover h-8 w-8 rounded-full" alt="" />
                                             )}
                                         </div>
@@ -210,7 +270,7 @@ export default function ChatPage() {
                     } duration-300`}>
                     {selectedChat && (
                         <>
-                            <button onClick={toggleProfile} className="absolute top-3 right-3 text-gray-500 hover:text-black">
+                            <button /*onClick={toggleProfile}*/ className="absolute top-3 right-3 text-gray-500 hover:text-black">
                                 ✖
                             </button>
                             <div className="text-xl font-semibold mb-3">Profile</div>

@@ -1,9 +1,10 @@
 'use client';
 
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaFacebookF, FaInstagram, FaXTwitter, FaLinkedinIn } from "react-icons/fa6";
 import { FaSearch, FaEdit, FaChartBar } from "react-icons/fa";
+import Cookies from "js-cookie";
 
 const mentors = [
   {
@@ -93,6 +94,12 @@ const testimonials = [
 ];
 
 const Home = () => {
+
+  useEffect(() => {
+    // console.log(Cookies.get('email'));
+    // console.log(Cookies.get('pass'));
+  }, [])
+
   return (
     <div className="font-inter text-gray-900 bg-white">
       {/* Navbar */}
@@ -146,7 +153,6 @@ const Home = () => {
       {/* Featured Mentor Section */}
       <section className="bg-gray-100 py-12 md:py-16 px-4 md:px-6 rounded-3xl">
         <div className="container mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-8 md:gap-12">
-          
           {/* Mentor Card - Left Side */}
           <div className="relative w-full max-w-sm lg:max-w-md lg:flex-shrink-0">
             <div className="absolute top-4 left-4 w-full h-full bg-white rounded-xl shadow-lg transform rotate-1"></div>
@@ -363,11 +369,12 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Mentor Pricing Section */}
-      <section className="bg-gradient-to-b from-[#e0f0f8] to-[#a6d5d8] py-12 md:py-16 px-4 sm:px-6 lg:px-8 text-center">
+      {/* 🔥 Mentor Pricing Section */}
+      <section className="bg-gradient-to-b from-[#e0f0f8] to-[#a6d5d8] py-16 px-4 sm:px-6 lg:px-8 text-center">
         {/* Header */}
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#142245] leading-tight max-w-4xl mx-auto">
-          An arsenal of industry veterans and mentoring packages at a flexible price.
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#142245] leading-tight">
+          An arsenal of industry veterans and <br className="hidden sm:block" />
+          mentoring packages at a flexible price.
         </h2>
         <p className="text-gray-700 max-w-2xl mx-auto mt-4 text-sm sm:text-base">
           Pick from a curated collection of mentors and services. Try them out with no
@@ -375,27 +382,15 @@ const Home = () => {
         </p>
 
         {/* Mentor Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-8 md:mt-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
           {mentors.map((mentor, index) => (
             <div
               key={index}
-              className="bg-white shadow-lg rounded-lg p-5 sm:p-6 text-left border border-gray-200 transition-transform transform hover:scale-105 duration-200 h-full flex flex-col"
+              className="bg-white shadow-lg rounded-lg p-5 sm:p-6 text-left border border-gray-200 transition-transform transform hover:scale-105 duration-200"
             >
-              {/* Mentor Info */}
-              <div className="flex items-center space-x-3">
-                <img 
-                  src={mentor.image} 
-                  alt={mentor.name} 
-                  className="w-12 h-12 rounded-full object-cover border border-gray-300"
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/80";
-                  }}
-                />
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{mentor.name}</h3>
-                  <p className="text-gray-500 text-sm">{mentor.role}</p>
-                </div>
-              </div>
+              {/* Mentor Name & Role */}
+              <h3 className="text-lg font-semibold text-gray-900">{mentor.name}</h3>
+              <p className="text-gray-500 text-sm">{mentor.role}</p>
 
               {/* Mentorship Price */}
               <div className="bg-gray-100 text-green-600 text-sm font-semibold py-2 px-4 rounded-md mt-4 inline-block">
@@ -403,7 +398,7 @@ const Home = () => {
               </div>
 
               {/* Services */}
-              <div className="mt-4 space-y-2 flex-grow">
+              <div className="mt-4 space-y-2">
                 {mentor.services.map((service, i) => (
                   <div key={i} className="flex justify-between bg-gray-100 p-2 rounded-md text-gray-700">
                     <span>{service.name}</span>
@@ -416,7 +411,7 @@ const Home = () => {
         </div>
 
         {/* Features Section */}
-        <div className="bg-white shadow-md rounded-lg mt-8 md:mt-10 p-4 md:p-8 flex flex-col md:flex-row flex-wrap justify-center items-center gap-4 md:gap-12">
+        <div className="bg-white shadow-md rounded-lg mt-10 p-6 md:p-8 flex flex-wrap justify-center gap-6 md:gap-12">
           {/* Feature 1 */}
           <div className="flex items-center space-x-4">
             <FaSearch className="text-blue-500 text-2xl" />
@@ -446,11 +441,11 @@ const Home = () => {
         </div>
 
         {/* Buttons */}
-        <div className="mt-8 md:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button className="bg-[#142245] text-white py-3 px-6 rounded-md text-lg font-medium hover:bg-[#0f1a33] transition duration-200 w-full sm:w-auto">
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button className="bg-[#142245] text-white py-3 px-6 rounded-md text-lg font-medium hover:bg-[#0f1a33] transition duration-200">
             Find my mentor
           </button>
-          <a href="#" className="text-[#142245] font-medium hover:underline text-lg w-full sm:w-auto text-center">
+          <a href="#" className="text-[#142245] font-medium hover:underline text-lg">
             Become a Mentor
           </a>
         </div>
@@ -460,9 +455,8 @@ const Home = () => {
       <footer className="bg-gray-100 text-gray-700 py-12">
         <div className="container mx-auto px-6 md:px-12 lg:px-20">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-            
             {/* Left Section - Title, Tagline, Social Icons */}
-            <div className="col-span-1 lg:col-span-2">
+            <div className="col-span-2">
               <h2 className="text-2xl font-semibold text-[#142245]">Guidance Hub</h2>
               <p className="mt-4 text-gray-600">
                 Your go-to platform for connecting with top mentors and industry experts to advance your career.
@@ -510,6 +504,20 @@ const Home = () => {
                     </li>
                   ))}
                 </ul>
+                {section.extraTitle && (
+                  <>
+                    <h4 className="text-sm font-semibold text-gray-600 uppercase mt-6">{section.extraTitle}</h4>
+                    <ul className="mt-2 space-y-1">
+                      {section.extraLinks.map((link, i) => (
+                        <li key={i}>
+                          <a href="#" className="text-gray-500 hover:text-gray-800 transition">
+                            {link}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
             ))}
           </div>

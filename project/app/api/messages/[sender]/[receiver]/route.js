@@ -32,7 +32,7 @@ export async function GET(req, { params }) {
             ...data,
             ...data2,
         ]
-        console.log(combined_data);
+        // console.log(combined_data);
         // console.log(data);
         return NextResponse.json(combined_data, { status: 200 });
 
