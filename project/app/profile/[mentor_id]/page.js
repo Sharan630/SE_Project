@@ -3,14 +3,34 @@
 import { motion } from "framer-motion";
 import { FaMapMarkerAlt, FaLinkedin, FaGithub, FaTwitter } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 
 const MentorProfile = () => {
-    const mentorData = {
-        name: "Dr. Sarah Johnson",
-        title: "Senior Software Architect & Tech Mentor",
-        location: "San Francisco, CA",
-        email: "sarah.johnson@email.com",
-    };
+
+    const params = useParams();
+    const mentorId = params.mentor_id;
+    console.log("mentor_id:", mentorId);
+    const [mentorData, setmentdata] = useState([]);
+
+    useEffect(() => {
+        const fetch = async () => {
+            const res = await axios.get(`/api/user/id/${mentorId}`);
+            console.log(res.data);
+            setmentdata(res.data);
+        }
+
+        fetch();
+    }, [])
+
+    // const mentorData = {
+    //     name: "Dr. Sarah Johnson",
+    //     title: "Senior Software Architect & Tech Mentor",
+    //     location: "San Francisco, CA",
+    //     email: "sarah.johnson@email.com",
+    // };
 
     const similarMentors = [
         { name: "James Anderson", title: "Cloud Solutions Architect", location: "Seattle, WA", image: "https://randomuser.me/api/portraits/men/1.jpg" },

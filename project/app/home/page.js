@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { FaFacebookF, FaInstagram, FaXTwitter, FaLinkedinIn } from "react-icons/fa6"
 import { FaSearch, FaEdit, FaChartBar } from "react-icons/fa";
 import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const mentors = [
   {
@@ -41,9 +42,15 @@ const mentors = [
 
 const Home = () => {
 
+  const router = useRouter();
+
   useEffect(() => {
     // console.log(Cookies.get('email'));
     // console.log(Cookies.get('pass'));
+    const email = sessionStorage.getItem("email");
+    if (!email) {
+      router.push("/login");
+    }
   }, [])
 
   return (
@@ -70,7 +77,7 @@ const Home = () => {
       <header className="bg-blue-600 text-white text-center pt-40 pb-28 px-6">
         <motion.h1
           className="text-5xl md:text-6xl font-extrabold leading-tight max-w-4xl mx-auto"
-          initial={{ opacity: 0, y: -50 }}
+          initial={{ opacity: 0, y: -50 }}  
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >

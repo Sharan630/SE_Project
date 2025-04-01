@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion } from "framer-motion";
+
 // import "../component_css/login.css";
 // import sessionStorage from "js-cookie";
 
@@ -20,7 +21,7 @@ const Login = () => {
     useEffect(() => {
         const storedEmail = sessionStorage.getItem("email");
         if (storedEmail) {
-            // router.push("/home");
+            router.push("/home");
             return;
         }
     }, [router]);
