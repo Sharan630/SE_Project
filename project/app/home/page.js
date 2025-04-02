@@ -6,6 +6,7 @@ import { FaFacebookF, FaInstagram, FaXTwitter, FaLinkedinIn } from "react-icons/
 import { FaSearch, FaEdit, FaChartBar } from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const mentors = [
   {
@@ -51,6 +52,17 @@ const Home = () => {
     if (!email) {
       router.push("/login");
     }
+
+    const fetch = async () => {
+      const response = await axios.get(`/api/user/${email}`);
+      const role = response.data.role;
+      // console.log(role);
+      sessionStorage.setItem("role", role);
+      sessionStorage.setItem('name', response.data.name);
+    }
+
+    fetch();
+
   }, [])
 
   return (
@@ -77,7 +89,7 @@ const Home = () => {
       <header className="bg-blue-600 text-white text-center pt-40 pb-28 px-6">
         <motion.h1
           className="text-5xl md:text-6xl font-extrabold leading-tight max-w-4xl mx-auto"
-          initial={{ opacity: 0, y: -50 }}  
+          initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >

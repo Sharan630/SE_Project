@@ -9,8 +9,9 @@ export async function POST(req) {
 
         await connectdb();
 
-        const { email, name, skills, imageLink, experience, availability, bio, phone } = await req.json();
-        if (!name || !skills || !experience || !availability || !phone || !bio || !email) {
+        const { email, name, skills, fees, picture, experience, availability, bio, phone } = await req.json();
+        console.log(name, skills, picture, experience, availability, bio, phone, fees);
+        if (!name || !skills || !experience || !availability || !phone || !bio) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
@@ -21,11 +22,12 @@ export async function POST(req) {
 
         if (name) mentor.name = name;
         if (skills) mentor.skills = skills;
-        if (imageLink) mentor.picture = imageLink;
-        if (experience !== undefined) mentor.experience = experience;
+        if (picture) mentor.picture = picture;
+        if (experience) mentor.experience = experience;
         if (availability) mentor.availability = availability;
         if (bio) mentor.bio = bio;
         if (phone) mentor.phone = phone;
+        if (fees) mentor.fees = fees;
 
         await mentor.save();
 

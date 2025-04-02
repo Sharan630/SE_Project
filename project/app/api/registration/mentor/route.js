@@ -1,29 +1,39 @@
-import connectdb from "@/database/connectdb";
+import connectDB from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
 
 
 export async function POST(req) {
     try {
-        await connectdb();
+        await connectDB();
 
-        const { email, name, skills, imageLink, experience, availability, bio, phone } = await req.json();
-        if (!email || !name || !skills || !experience || !bio || !availability || !phone) {
+        const { email, name, skills, picture, experience, availability, bio, phone, fees } = await req.json();
+        // console.log(email, name, skills, picture, experience, availability, bio, phone);
+        if (!email || !name || !skills || !experience || !bio || !availability || !phone || !fees) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
         const mentor = await User.findOne({ email, role: "mentor" });
+        // console.log(mentor);
         if (!mentor) {
             return NextResponse.json({ message: "Mentor not found" }, { status: 404 });
         }
 
         if (name) mentor.name = name;
+
         if (skills) mentor.skills = skills;
-        if (imageLink) mentor.picture = imageLink;
-        if (experience !== undefined) mentor.experience = experience;
+
+        if (picture !== "") mentor.picture = picture;
+
+        if (experience) mentor.experience = experience;
+
         if (availability) mentor.availability = availability;
+
         if (bio) mentor.bio = bio;
+
         if (phone) mentor.phone = phone;
+        if (fees) mentor.fees = fees;
+
 
         await mentor.save();
 

@@ -21,6 +21,7 @@ io.on("connection", async (socket) => {
     // Handle joining a specific chat room
     socket.on("joinRoom", ({ user_id, roomId }) => {
         if (!roomId) return;
+        console.log(`Joined ${user_id}`);
 
         // Actually join the room (previously was joining user_id instead)
         socket.join(roomId);
@@ -30,6 +31,7 @@ io.on("connection", async (socket) => {
     // Handle sending messages
     socket.on("sendMessage", async (data) => {
         const { content, to, from, roomId } = data;
+        console.log(content, to, from, roomId);
 
         if (!roomId) {
             console.error("No roomId provided");

@@ -2,28 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import Cookies from "js-cookie";
 import axios from "axios";
 
 export default function EditProfile() {
-    const [user, setUser] = useState({});
-    const [name, setName] = useState('');
-
+    const [user, setUser] = useState({
+        name: "",
+        picture: "",
+        bio: "",
+        skills: [],
+        experience: "",
+        phone: "",
+        availability: [],
+        fees: "",
+        linkedin: ""
+    });
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
-    useEffect(() => {
 
-        const email = Cookies.get("email");
-        const name = Cookies.get("name");
-        const password = Cookies.get("password");
-        // const role = localStorage.getItem("role");
-        const phone = Cookies.get("phone");
-        const bio = Cookies.get("bio");
-        const skills = Cookies.get("skills");
-        const experience = Cookies.get("experience");
-        const availability = Cookies.get("availability");
-        const rating = Cookies.get("rating");
-        const connected = Cookies.get("connected");
-        const imagePath = Cookies.get("imagePath");
+    useEffect(() => {
+        const email = sessionStorage.getItem("email");
+        const name = sessionStorage.getItem("name");
 
         if (!email) {
             router.push('/login');
@@ -31,172 +30,192 @@ export default function EditProfile() {
         }
 
         if (!name) {
-          router.push('/form');
-          return;
+            router.push('/register');
+            return;
         }
 
-        const fetch = async () => {
-          try {
-            const res = await axios.get(`/api/users/email/${email}`);
-            setUser(res.data);
-            console.log(res.data);
-          } catch (error) {
-            console.error(error);
-          }
-        }
+        const fetchUser = async () => {
+            try {
+                setLoading(true);
+                const res = await axios.get(`/api/user/${email}`);
+                setUser({
+                    ...res.data,
+                    skills: Array.isArray(res.data.skills) ? res.data.skills : [],
+                    availability: Array.isArray(res.data.availability) ? res.data.availability : []
+                });
+                console.log(res.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        fetch();
-
-    }, [])
+        fetchUser();
+    }, [router]);
 
     const handleChange = (e) => {
-        e.preventDefault();
         const { name, value } = e.target;
-        console.log(name, value);
-        // console.log("ok")
 
-        // if (name === "pin") {
-        //   if (/^\d{0,6}$/.test(value)) {
-        //     setUser({ ...user, [name]: value });
-        //   }
-        // } else if (name === "phone") {
+        if (name === "skills") {
+            setUser({ ...user, [name]: value.split(",").map(skill => skill.trim()) });
+        } else if (name === "phone") {
+            if (/^\d{0,10}$/.test(value)) {
+                setUser({ ...user, [name]: value });
+            }
+        } else {
+            setUser({ ...user, [name]: value });
+        }
+    };
 
-        //   if (/^\d{0,10}$/.test(value)) {
-        //     setUser({ ...user, [name]: value });
-        //   }
-        // } else {
-        //   setUser({ ...user, [name]: value });
-        // }
+    const handleAvailabilityChange = (day, timeSlots) => {
+        const updatedAvailability = user.availability.filter(a => a.day !== day);
+        updatedAvailability.push({ day, timeSlots: timeSlots.split(",").map(slot => slot.trim()) });
+        setUser({ ...user, availability: updatedAvailability });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // if (user && user.Phone.length !== 10) {
-        //   alert("Phone number must be exactly 10 digits.");
-        //   return;
-        // }
+        if (user.phone && user.phone.length !== 10) {
+            alert("Phone number must be exactly 10 digits.");
+            return;
+        }
 
-        // console.log("Updated User Data:", user);
-        // try {
-        //     const res = await axios.post("/api/update", {
-        //         name: user.Name,
+        if (user.password && user.password.length < 6) {
+            alert("Password must be at least 6 characters long.");
+            return;
+        }
 
-        //         email: user.Email,
-        //         phone: user.Phone,
+        const role = sessionStorage.getItem('role');
 
-        //     });
-        //     alert("Profile updated successfully!");
-        // } catch (err) {
-        //     // console.error(err);
-        //     alert("Failed to update profile. Please try again later.");
-        // }
+        try {
+            const res = await axios.post(`/api/update/${role}`, user);
+            alert("Profile updated successfully!");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update profile. Please try again later.");
+        }
     };
+
+    const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[url('/editbg.jpeg')] bg-cover bg-center p-4">
             <div className="w-full max-w-md bg-white bg-opacity-20 backdrop-blur-lg shadow-lg rounded-lg p-6">
                 <h2 className="text-2xl font-semibold text-center text-black mb-4">Edit Profile</h2>
-                <form onSubmit={handleSubmit} className="space-y-4  overflow-y-auto max-h-110  " style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70vh]" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                     <div>
-                        <label className="block text-black py-2 font-bold">Username</label>
+                        <label className="block text-black py-2 font-bold">Name</label>
                         <input
-                            defaultValue={"not known"}
                             type="text"
-                            name="Name"
-                            value={user?.name}
+                            name="name"
+                            value={user.name || ""}
                             onChange={handleChange}
                             className="w-full bg-white bg-opacity-50 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            required
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-black py-2 font-bold">Profile Picture URL</label>
+                        <input
+                            type="file"
+                            name="picture"
+                            value={user.picture || ""}
+                            onChange={handleChange}
+                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-black py-2 font-bold">Password</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={user ? user.Password : "not known"}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-black py-2 font-bold">Email</label>
-                        <input
-                            defaultValue={"not known"}
-                            type="email"
-                            name="Email"
-                            value={user?.Email}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            required
-                        />
-                    </div>
                     <div>
                         <label className="block text-black py-2 font-bold">Bio</label>
-                        <input
-                            defaultValue={"not known"}
-                            type="text"
-                            name="Bio"
-                            value={user?.Bio}
+                        <textarea
+                            name="bio"
+                            value={user.bio || ""}
                             onChange={handleChange}
                             className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            required
+                            rows={3}
                         />
                     </div>
+
                     <div>
-                        <label className="block text-black py-2 font-bold">Skills</label>
+                        <label className="block text-black py-2 font-bold">Skills (comma-separated)</label>
                         <input
-                            defaultValue={"not known"}
                             type="text"
-                            name="Skills"
-                            value={user?.Skills}
+                            name="skills"
+                            value={user.skills?.join(", ") || ""}
                             onChange={handleChange}
                             className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            required
                         />
                     </div>
+
                     <div>
-                        <label className="block text-black py-2 font-bold">Experience</label>
+                        <label className="block text-black py-2 font-bold">Experience (years)</label>
                         <input
-                            defaultValue={"not known"}
                             type="text"
-                            name="Experience"
-                            value={user?.Experience}
+                            name="experience"
+                            value={user.experience || ""}
                             onChange={handleChange}
                             className="w-full bg-white bg-opacity-30 text-black p-2 border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-black py-2 font-bold">Availability</label>
-                        <input
-                            defaultValue={"not known"}
-                            type="text"
-                            name="Availability"
-                            value={user?.Availability}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black  focus:outline-none focus:ring focus:ring-blue-100"
-                            required
                         />
                     </div>
 
                     <div>
                         <label className="block text-black py-2 font-bold">Phone</label>
                         <input
-                            defaultValue={"not known"}
                             type="tel"
-                            name="Phone"
-                            value={user?.Phone}
+                            name="phone"
+                            value={user.phone || ""}
                             onChange={handleChange}
-
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black  focus:outline-none focus:ring focus:ring-blue-100"
-                            required
+                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
+                            maxLength={10}
                         />
                     </div>
+
+                    <div>
+                        <label className="block text-black py-2 font-bold">LinkedIn Profile</label>
+                        <input
+                            type="text"
+                            name="linkedin"
+                            value={user.linkedin || ""}
+                            onChange={handleChange}
+                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
+                        />
+                    </div>
+
+                    {user.role === "mentor" && (
+                        <div>
+                            <label className="block text-black py-2 font-bold">Fees</label>
+                            <input
+                                type="text"
+                                name="fees"
+                                value={user.fees || ""}
+                                onChange={handleChange}
+                                className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
+                            />
+                        </div>
+                    )}
+
+                    {user.role === "mentor" && (
+                        <div>
+                            <label className="block text-black py-2 font-bold">Availability</label>
+                            {daysOfWeek.map((day) => (
+                                <div key={day} className="mb-2">
+                                    <label className="inline-block mr-2">{day}:</label>
+                                    <input
+                                        type="text"
+                                        placeholder="9:00 AM, 2:00 PM, 6:00 PM"
+                                        value={user.availability.find(a => a.day === day)?.timeSlots.join(", ") || ""}
+                                        onChange={(e) => handleAvailabilityChange(day, e.target.value)}
+                                        className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"

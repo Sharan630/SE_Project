@@ -1,180 +1,334 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FaMapMarkerAlt, FaLinkedin, FaGithub, FaTwitter } from "react-icons/fa";
-import { MdEmail } from "react-icons/md";
-import { useParams } from 'next/navigation';
 import { useEffect, useState } from "react";
+import { useParams } from 'next/navigation';
 import axios from "axios";
-
+import {
+    FaMapMarkerAlt,
+    FaLinkedin,
+    FaGithub,
+    FaTwitter,
+    FaStar,
+    FaCalendarAlt,
+    FaChalkboardTeacher,
+    FaUserGraduate
+} from "react-icons/fa";
+import { MdEmail, MdVerified, MdOutlineSchedule } from "react-icons/md";
+import { BiMessageSquareDetail } from "react-icons/bi";
 
 const MentorProfile = () => {
-
     const params = useParams();
     const mentorId = params.mentor_id;
-    console.log("mentor_id:", mentorId);
-    const [mentorData, setmentdata] = useState([]);
+    const [mentorData, setMentorData] = useState({});
+    const [skills, setSkills] = useState([]);
+    const [availableTimes, setAvailableTimes] = useState([]);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetch = async () => {
-            const res = await axios.get(`/api/user/id/${mentorId}`);
-            console.log(res.data);
-            setmentdata(res.data);
-        }
+        const fetchMentorData = async () => {
+            setIsLoading(true);
+            try {
+                const res = await axios.get(`/api/user/id/${mentorId}`);
+                setMentorData(res.data);
+                setSkills(res.data.skills || []);
 
-        fetch();
-    }, [])
+                // Extract availability from the mentor data
+                const times = res.data.availability || [];
+                setAvailableTimes(times);
+            } catch (error) {
+                console.error("Error fetching mentor data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    // const mentorData = {
-    //     name: "Dr. Sarah Johnson",
-    //     title: "Senior Software Architect & Tech Mentor",
-    //     location: "San Francisco, CA",
-    //     email: "sarah.johnson@email.com",
-    // };
+        fetchMentorData();
+    }, [mentorId]);
 
     const similarMentors = [
-        { name: "James Anderson", title: "Cloud Solutions Architect", location: "Seattle, WA", image: "https://randomuser.me/api/portraits/men/1.jpg" },
-        { name: "Emily Carter", title: "AI & Machine Learning Engineer", location: "New York, NY", image: "https://randomuser.me/api/portraits/women/2.jpg" },
-        { name: "Michael Brown", title: "Full Stack Developer & Mentor", location: "Los Angeles, CA", image: "https://randomuser.me/api/portraits/men/3.jpg" },
-        { name: "Sophia Martinez", title: "Product Manager & UX Strategist", location: "Chicago, IL", image: "https://randomuser.me/api/portraits/women/4.jpg" },
+        { id: 1, name: "James Anderson", title: "Cloud Solutions Architect", experience: "8 years", rating: 4.8, image: "/api/placeholder/80/80" },
+        { id: 2, name: "Emily Carter", title: "AI & Machine Learning Engineer", experience: "6 years", rating: 4.9, image: "/api/placeholder/80/80" },
+        { id: 3, name: "Michael Brown", title: "Full Stack Developer", experience: "10 years", rating: 4.7, image: "/api/placeholder/80/80" },
+        { id: 4, name: "Sophia Martinez", title: "Product Manager & UX Strategist", experience: "7 years", rating: 4.6, image: "/api/placeholder/80/80" },
     ];
 
-    const skills = [
-        "Software Engineering", "Web Development", "Software Architecture", "System Design",
-        "JavaScript", "Next.js", "Full Stack Development", "Front-end Development",
-        "Back-end Development", "ReactJS", "Java", "Career Growth", "NodeJS",
-        "Distributed Systems", "Technical Leadership",
-    ];
+    const handleBookSession = (timeSlot) => {
+        setSelectedTimeSlot(timeSlot);
+        // Open booking modal or navigate to booking page
+    };
+
+    // Loading skeleton
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 py-6 px-4 sm:px-8 md:px-16">
+                <div className="max-w-5xl mx-auto">
+                    <div className="h-64 w-full bg-gray-200 animate-pulse rounded-t-xl"></div>
+                    <div className="bg-white rounded-b-xl p-6 shadow-lg">
+                        <div className="flex flex-col lg:flex-row gap-8">
+                            <div className="w-full lg:w-2/3">
+                                <div className="h-8 w-48 bg-gray-200 animate-pulse rounded-full mb-4"></div>
+                                <div className="h-4 w-36 bg-gray-200 animate-pulse rounded-full mb-4"></div>
+                                <div className="h-4 w-full bg-gray-200 animate-pulse rounded-full mb-2"></div>
+                                <div className="h-4 w-full bg-gray-200 animate-pulse rounded-full mb-2"></div>
+                                <div className="h-4 w-3/4 bg-gray-200 animate-pulse rounded-full mb-6"></div>
+
+                                <div className="h-6 w-36 bg-gray-200 animate-pulse rounded-full mb-4"></div>
+                                <div className="flex flex-wrap gap-2">
+                                    {[1, 2, 3, 4, 5, 6].map(i => (
+                                        <div key={i} className="h-8 w-24 bg-gray-200 animate-pulse rounded-full"></div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="w-full lg:w-1/3">
+                                <div className="h-10 w-full bg-gray-200 animate-pulse rounded-lg mb-4"></div>
+                                <div className="h-60 w-full bg-gray-200 animate-pulse rounded-lg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-100 to-blue-100 py-6 px-4 sm:px-16">
-            {/* Background Image */}
-            <div className="h-60 w-full">
-                <img
-                    src="/back.gif"
-                    alt="Background"
-                    className="w-full h-full object-cover rounded-t-lg"
-                />
-            </div>
-
-            {/* Profile Card */}
-            <div className="relative bg-white shadow-lg rounded-b-lg px-6 pb-6 pt-16 sm:pt-20 md:pt-24">
-                {/* Profile Picture - Overlapping */}
-                <div className="absolute -top-14 sm:-top-16 left-1/2 transform -translate-x-1/2">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 py-6 px-4 sm:px-8 md:px-16">
+            <div className="max-w-5xl mx-auto">
+                {/* Cover Image */}
+                <div className="h-64 w-full relative rounded-t-xl overflow-hidden shadow-lg">
                     <img
-                        src="/images.jpg"
-                        alt="Profile"
-                        className="w-24 h-24 sm:w-40 sm:h-40  rounded-full border-4 border-slate-600 shadow-lg"
+                        src="/api/placeholder/1200/400"
+                        alt="Cover background"
+                        className="w-full h-full object-cover"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                 </div>
 
-                {/* Profile and Plan Container */}
-                <div className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-6">
-                    {/* User Details */}
-                    <div className="text-center sm:text-left sm:mr-8">
-                        <h2 className="text-lg sm:text-2xl font-bold text-gray-900">{mentorData.name}</h2>
-                        <p className="text-gray-600 text-sm sm:text-base">{mentorData.title}</p>
-                        {/* Location & Social Links */}
-                        <div className="flex flex-wrap justify-center sm:justify-start items-center space-x-3 text-gray-500 text-xs sm:text-sm mt-2">
-                            <span className="flex items-center"><FaMapMarkerAlt className="mr-1" /> {mentorData.location}</span>
-                            <a href="#" className="hover:text-gray-800"><FaLinkedin size={18} /></a>
-                            <a href="#" className="hover:text-gray-800"><FaGithub size={18} /></a>
-                            <a href="#" className="hover:text-gray-800"><FaTwitter size={18} /></a>
-                            <a href={`mailto:${mentorData.email}`} className="hover:text-gray-800"><MdEmail size={18} /></a>
-                        </div>
-                    </div>
-                    <div className="w-full max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow-sm sm:p-8 mt-4 sm:mt-0">
-                        <h5 className="mb-4 text-xl font-medium text-gray-500">Standard plan</h5>
-                        <div className="flex items-baseline text-gray-900">
-                            <span className="text-3xl font-semibold">$</span>
-                            <span className="text-5xl font-extrabold tracking-tight">49</span>
-                            <span className="ms-1 text-xl font-normal text-gray-500 dark:text-gray-400">/month</span>
-                        </div>
-                        <ul role="list" className="space-y-5 my-7">
-                            <li className="flex items-center">
-                                <svg className="shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                                </svg>
-                                <span className="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">2 team members</span>
-                            </li>
-                            <li className="flex">
-                                <svg className="shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                                </svg>
-                                <span className="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Integration help</span>
-                            </li>
-                            <li className="flex line-through decoration-gray-500">
-                                <svg className="shrink-0 w-4 h-4 text-gray-400 dark:text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                                </svg>
-                                <span className="text-base font-normal leading-tight text-gray-500 ms-3">24×7 phone & email support</span>
-                            </li>
-                        </ul>
-                        <button type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-200 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-900 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center">Choose plan</button>
-                    </div>
-                </div>
-
-                {/* Skills Section */}
-                <div className="bg-gray-100 rounded-lg p-4 sm:p-6 my-6 shadow-lg">
-                    <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-800">Skills</h2>
-                    <div className="flex flex-wrap gap-2 sm:gap-3">
-                        {skills.map((skill, index) => (
-                            <motion.span
-                                key={index}
-                                whileHover={{ scale: 1.1 }}
-                                className="px-3 py-1 sm:px-4 sm:py-2 bg-gray-200 text-gray-800 rounded-full text-xs sm:text-sm font-medium shadow-sm transition"
-                            >
-                                {skill}
-                            </motion.span>
-                        ))}
-                    </div>
-                </div>
-
-                {/* About Section */}
-                <div className="bg-gray-100 rounded-lg p-4 sm:p-6 shadow-lg">
-                    <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-800">About</h2>
-                    <p className="text-xs sm:text-sm text-gray-800">
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit. Neque laudantium impedit debitis, perspiciatis voluptatibus repellat aspernatur, doloribus itaque praesentium odio soluta labore vel consequatur dignissimos autem molestiae ut perferendis magni eos nostrum quibusdam iure, ullam asperiores. Dolore cumque excepturi laudantium repudiandae consectetur quaerat, consequuntur ab?
-                    </p>
-                </div>
-
-                {/* Similar Mentors Section */}
-                <div className="bg-white rounded-lg p-4 sm:p-6 mt-8 shadow-lg overflow-hidden">
-                    <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-800">Similar Mentors</h2>
-                    <div className="overflow-x-auto scrollbar-hide">
-                        <motion.div
-                            className="flex space-x-4 sm:space-x-6"
-                            animate={{ x: ["0%", "-100%"] }}
-                            transition={{ ease: "linear", duration: 25, repeat: Infinity }}
-                        >
-                            {[...similarMentors, ...similarMentors].map((mentor, index) => (
-                                <motion.div
-                                    key={index}
-                                    whileHover={{ scale: 1.05 }}
-                                    className="flex flex-col items-center bg-gray-100 p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition w-44 sm:w-56"
-                                >
-                                    <img src={mentor.image} alt={mentor.name} className="w-16 h-16 sm:w-24 sm:h-24 rounded-full mb-2 object-cover" />
-                                    <h3 className="text-sm sm:text-lg font-medium text-gray-800">{mentor.name}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-600">{mentor.title}</p>
-                                    <div className="flex items-center text-gray-500 text-xs sm:text-sm mt-1">
-                                        <FaMapMarkerAlt className="mr-1" size={12} />
-                                        <span>{mentor.location}</span>
+                {/* Main Content */}
+                <div className="bg-white rounded-b-xl shadow-lg">
+                    <div className="container mx-auto">
+                        {/* Profile Header */}
+                        <div className="flex flex-col lg:flex-row p-6">
+                            {/* Profile Info Section */}
+                            <div className="w-full lg:w-2/3 pr-0 lg:pr-8">
+                                <div className="flex items-start mb-6">
+                                    <div className="relative mr-6">
+                                        <img
+                                            src={mentorData.picture || "/api/placeholder/120/120"}
+                                            alt="Profile"
+                                            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                                        />
+                                        <span className="absolute bottom-0 right-0 bg-green-500 p-1 rounded-full border-2 border-white">
+                                            <MdVerified className="text-white" size={14} />
+                                        </span>
                                     </div>
+
+                                    <div>
+                                        <div className="flex items-center">
+                                            <h1 className="text-2xl font-bold text-gray-800">{mentorData.name || "Mentor Name"}</h1>
+                                            <div className="flex items-center ml-4">
+                                                <FaStar className="text-yellow-400" />
+                                                <span className="ml-1 text-gray-700 font-medium">4.9</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-lg text-gray-600 font-medium">{mentorData.title || "Mentor Title"}</p>
+
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-gray-600">
+                                            <span className="flex items-center text-sm">
+                                                <FaMapMarkerAlt className="mr-1" />
+                                                {mentorData.location || "Location"}
+                                            </span>
+                                            <span className="flex items-center text-sm">
+                                                <FaChalkboardTeacher className="mr-1" />
+                                                {mentorData.experience || "0"} years experience
+                                            </span>
+                                            <span className="flex items-center text-sm">
+                                                <FaUserGraduate className="mr-1" />
+                                                {mentorData.connected.length || "20+"} mentees
+                                            </span>
+                                        </div>
+
+                                        <div className="flex space-x-3 mt-4">
+                                            <a href={mentorData.linkedin || "#"} className="text-blue-600 hover:text-blue-800 transition">
+                                                <FaLinkedin size={20} />
+                                            </a>
+                                            <a href={mentorData.github || "#"} className="text-gray-700 hover:text-gray-900 transition">
+                                                <FaGithub size={20} />
+                                            </a>
+                                            <a href={mentorData.twitter || "#"} className="text-blue-400 hover:text-blue-600 transition">
+                                                <FaTwitter size={20} />
+                                            </a>
+                                            <a href={`mailto:${mentorData.email}`} className="text-red-500 hover:text-red-700 transition">
+                                                <MdEmail size={20} />
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* About Section */}
+                                <div className="mb-8">
+                                    <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                                        <BiMessageSquareDetail className="mr-2" />
+                                        About
+                                    </h2>
+                                    <p className="text-gray-700 leading-relaxed">
+                                        {mentorData.bio || "No bio available"}
+                                    </p>
+                                </div>
+
+                                {/* Skills Section */}
+                                <div className="mb-8">
+                                    <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                                        <FaChalkboardTeacher className="mr-2" />
+                                        Skills & Expertise
+                                    </h2>
+                                    <div className="flex flex-wrap gap-2">
+                                        {skills.length > 0 ? (
+                                            skills.map((skill, index) => (
+                                                <motion.span
+                                                    key={index}
+                                                    whileHover={{ scale: 1.05 }}
+                                                    className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium"
+                                                >
+                                                    {skill}
+                                                </motion.span>
+                                            ))
+                                        ) : (
+                                            <p className="text-gray-500">No skills listed</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Availability Section */}
+                                <div className="mb-8">
+                                    <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                                        <MdOutlineSchedule className="mr-2" />
+                                        Availability
+                                    </h2>
+
+                                    {availableTimes.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {availableTimes.map((slot, index) => (
+                                                <div key={index} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                    <div className="font-medium text-gray-800">{slot.day}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">
+                                                        {slot.timeSlots.map((time, i) => (
+                                                            <div key={i} className="mb-1 flex items-center">
+                                                                <FaCalendarAlt className="mr-2 text-indigo-500" size={12} />
+                                                                {time}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">No availability information</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Pricing & Booking Section */}
+                            <div className="w-full lg:w-1/3 mt-8 lg:mt-0">
+                                <div className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden sticky top-6">
+                                    <div className="bg-indigo-600 text-white p-4">
+                                        <h3 className="text-xl font-bold">Book a Session</h3>
+                                        <p className="text-indigo-100">Get personalized guidance</p>
+                                    </div>
+
+                                    <div className="p-6">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div>
+                                                <p className="text-gray-500 text-sm mb-1">Session Price</p>
+                                                <div className="flex items-baseline">
+                                                    <span className="text-3xl font-bold text-gray-900">₹{mentorData.fees}</span>
+                                                    <span className="text-gray-500 ml-1">/month</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                                4 spots left
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 mb-6">
+                                            <h4 className="font-medium text-gray-800">What's included:</h4>
+                                            <ul className="space-y-2">
+                                                <li className="flex items-start">
+                                                    <svg className="w-4 h-4 text-green-500 mt-1 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-gray-600">One-on-one video consultation</span>
+                                                </li>
+                                                <li className="flex items-start">
+                                                    <svg className="w-4 h-4 text-green-500 mt-1 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-gray-600">Personalized guidance & feedback</span>
+                                                </li>
+                                                <li className="flex items-start">
+                                                    <svg className="w-4 h-4 text-green-500 mt-1 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-gray-600">Resource recommendations</span>
+                                                </li>
+                                                <li className="flex items-start">
+                                                    <svg className="w-4 h-4 text-green-500 mt-1 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-gray-600">2 weeks of follow-up support</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-center shadow-sm transition duration-150"
+                                            onClick={() => handleBookSession()}
+                                        >
+                                            Book a Session
+                                        </motion.button>
+
+                                        <p className="text-xs text-gray-500 text-center mt-4">
+                                            You won't be charged until after the session
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Similar Mentors Section */}
+                    <div className="border-t border-gray-200 bg-gray-50 p-6 rounded-b-xl">
+                        <h2 className="text-xl font-semibold mb-6 text-gray-800">Similar Mentors</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {similarMentors.map((mentor) => (
+                                <motion.div
+                                    key={mentor.id}
+                                    whileHover={{ y: -5 }}
+                                    className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
+                                >
+                                    <div className="flex items-center mb-3">
+                                        <img src={mentor.image} alt={mentor.name} className="w-12 h-12 rounded-full object-cover mr-3" />
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">{mentor.name}</h3>
+                                            <div className="flex items-center text-xs text-yellow-500">
+                                                <FaStar size={12} />
+                                                <span className="ml-1 text-gray-600">{mentor.rating}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-2">{mentor.title}</p>
+                                    <p className="text-xs text-gray-500">{mentor.experience} experience</p>
+                                    <button className="mt-3 text-sm w-full py-1.5 border border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-lg transition text-center">
+                                        View Profile
+                                    </button>
                                 </motion.div>
                             ))}
-                        </motion.div>
+                        </div>
                     </div>
-                </div>
-
-                {/* Call to Action */}
-                <div className="text-center mt-6 sm:mt-8">
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="bg-indigo-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-lg font-semibold hover:bg-indigo-700 transition"
-                    >
-                        Book a Mentorship Session
-                    </motion.button>
                 </div>
             </div>
         </div>
