@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import { MdEmail, MdVerified, MdOutlineSchedule } from "react-icons/md";
 import { BiMessageSquareDetail } from "react-icons/bi";
+import { useRouter } from "next/navigation";
 
 const MentorProfile = () => {
     const params = useParams();
@@ -25,6 +26,7 @@ const MentorProfile = () => {
     const [availableTimes, setAvailableTimes] = useState([]);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchMentorData = async () => {
@@ -55,6 +57,7 @@ const MentorProfile = () => {
     ];
 
     const handleBookSession = (timeSlot) => {
+        router.push(`/requestmentor/${mentorData.phone}`)
         setSelectedTimeSlot(timeSlot);
         // Open booking modal or navigate to booking page
     };

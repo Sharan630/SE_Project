@@ -29,16 +29,18 @@ export async function POST(req) {
     try {
         await connectdb();
 
-        const { email, message, to } = await req.json();
+        const { email, message, name, mentor } = await req.json();
+        // console.log(email, message, name, mentor);
 
-        if (!email || !to || !message) {
+        if (!email || !name || !message) {
             return NextResponse.json({ message: "User ID and message are required" }, { status: 400 });
         }
 
-        const from = await User.findOne({ email: email });
+        const to = await User.findOne({ phone: mentor });
+        const from = await User.findOne({email: email});
 
         const newNotification = new Notification({
-            to: to,
+            to: to._id,
             message: message,
             from: from._id
         });

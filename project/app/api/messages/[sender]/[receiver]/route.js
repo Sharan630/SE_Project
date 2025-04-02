@@ -17,6 +17,7 @@ export async function GET(req, { params }) {
                 content: msg.content,
                 sender: msg.sender,
                 receiver: msg.receiver,
+                timestamp: msg.timestamp
             }
         })
 
@@ -25,6 +26,7 @@ export async function GET(req, { params }) {
                 content: msg.content,
                 sender: msg.sender,
                 receiver: msg.receiver,
+                timestamp: msg.timestamp
             }
         })
 

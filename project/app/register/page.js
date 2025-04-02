@@ -82,13 +82,8 @@ const Form = () => {
             return;
         }
 
-        if (!name || !email || !password || !role) {
+        if (!name || !role) {
             alert('Name, email, password and role are required');
-            return;
-        }
-
-        if (password.length < 6) {
-            alert('Password must be at least 6 characters');
             return;
         }
 
@@ -111,6 +106,7 @@ const Form = () => {
             }
 
             // Send registration data to API
+            const email = sessionStorage.getItem('email');
             const response = await axios.post(`/api/registration/${role}`, {
                 name,
                 email,

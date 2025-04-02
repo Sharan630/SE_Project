@@ -1,8 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import axios from "axios";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 export default function RequestMentorship() {
+
+    const router = useRouter();
+
+    const { mentorphone } = useParams();
+    console.log(mentorphone);
+    if (!mentorphone) {
+        router.back();
+        return;
+    }
+
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -19,10 +32,42 @@ export default function RequestMentorship() {
         });
     };
 
+    useEffect(() => {
+        const email = sessionStorage.getItem('email');
+        const name = sessionStorage.getItem('name');
+        if (!email) {
+            router.push('/login');
+            return;
+        }
+
+        if (!name) {
+            router.push('/register');
+            return;
+        }
+
+        const fetch = async () => {
+            const res = await axios.get(`/api/user/${email}`);
+            const data = res.data;
+            const input = {
+                name: data.name,
+                email: data.email,
+                mentor: mentorphone,
+                message: "",
+            }
+
+            console.log(input);
+
+            setFormData(input);
+        }
+
+        fetch();
+
+    }, [])
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.email || !formData.mentor || !formData.message) {
+        if (!formData.message) {
             setMessage("Please fill in all fields.");
             return;
         }
@@ -34,6 +79,7 @@ export default function RequestMentorship() {
             //     headers: { "Content-Type": "application/json" },
             //     body: JSON.stringify(formData),
             // });
+            const res = await axios.post('/api/notification', formData);
 
             // const result = await response.json();
             setMessage("Your mentorship request has been sent!");
@@ -53,46 +99,6 @@ export default function RequestMentorship() {
                 {message && <p className="text-center text-green-600 mt-2">{message}</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    <div>
-                        <label className="block text-gray-700">Your Name</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full p-2 border rounded"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="w-full p-2 border rounded"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-gray-700">Select Mentor</label>
-                        <select
-                            name="mentor"
-                            value={formData.mentor}
-                            onChange={handleChange}
-                            className="w-full p-2 border rounded"
-                            required
-                        >
-                            <option value="">-- Select a Mentor --</option>
-                            <option value="mentor1">John Doe</option>
-                            <option value="mentor2">Jane Smith</option>
-                            <option value="mentor3">Michael Brown</option>
-                        </select>
-                    </div>
-
                     <div>
                         <label className="block text-gray-700">Your Message</label>
                         <textarea

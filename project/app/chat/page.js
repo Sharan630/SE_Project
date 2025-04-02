@@ -16,8 +16,7 @@ export default function ChatPage() {
 
     // Initialize socket and fetch user data
     useEffect(() => {
-        const newSocket = io('http://localhost:3001'
-        );
+        const newSocket = io('http://localhost:3001');
         setSocket(newSocket);
 
         const fetchData = async () => {
@@ -37,40 +36,56 @@ export default function ChatPage() {
 
         fetchData();
 
+        const handleReceiveMessage = (message) => {
+            setMessages(prev => {
+                const newMessages = [...prev, {
+                    content: message.content,
+                    sender: message.from,
+                    receiver: message.to,
+                    timestamp: message.timestamp || new Date().toISOString()
+                }];
+                return sortMessagesByTimestamp(newMessages);
+            });
+        };
+
+        newSocket.on('receiveMessage', handleReceiveMessage);
+
         return () => {
             newSocket.disconnect();
         };
     }, [email]);
+
+    // Sort messages by timestamp
+    const sortMessagesByTimestamp = (msgs) => {
+        return [...msgs].sort((a, b) => {
+            const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return timestampA - timestampB;
+        });
+    };
 
     // Handle incoming messages
     useEffect(() => {
         if (!socket) return;
 
         const handleReceiveMessage = (message) => {
-            setMessages(prev => [...prev, {
-                content: message.content,
-                sender: message.from,
-                receiver: message.to,
-                // timestamp: message.timestamp || new Date()
-            }]);
-            // console.log(message);
+            setMessages(prev => {
+                const newMessages = [...prev, {
+                    content: message.content,
+                    sender: message.from,
+                    receiver: message.to,
+                    timestamp: message.timestamp || new Date().toISOString()
+                }];
+                return sortMessagesByTimestamp(newMessages);
+            });
         };
-        // if (socket) {
-        // console.log("received");
+
         socket.on('receiveMessage', handleReceiveMessage);
-        // }
 
         return () => {
             socket.off('receiveMessage', handleReceiveMessage);
         };
     }, [socket]);
-
-    // if (socket && roomId) {
-    //     socket.emit('joinRoom', {
-    //         user_id: userId,
-    //         roomId: roomId
-    //     });
-    // }
 
     // Handle room joining when chat is selected
     useEffect(() => {
@@ -83,7 +98,9 @@ export default function ChatPage() {
         const fetchMessages = async () => {
             try {
                 const res = await axios.get(`/api/messages/${userId}/${selectedChat._id}`);
-                setMessages(res.data);
+                // Sort fetched messages by timestamp
+                setMessages(sortMessagesByTimestamp(res.data));
+                console.log(res);
             } catch (error) {
                 console.error('Error fetching messages:', error);
             }
@@ -95,14 +112,7 @@ export default function ChatPage() {
 
     useEffect(() => {
         if (!socket || !roomId || !userId) return;
-
-        // return () => {
-        //     socket.off('joinRoom', {
-        //         user_id: userId,
-        //         roomId: roomId
-        //     });
-        // }
-    }, [socket, roomId, userId])
+    }, [socket, roomId, userId]);
 
     const handleChatClick = useCallback((chat) => {
         setSelectedChat(chat);
@@ -111,33 +121,45 @@ export default function ChatPage() {
             roomId: roomId
         });
         setIsProfileOpen(false);
-    }, []);
+    }, [socket, userId, roomId]);
 
     const sendMessage = () => {
         if (!message.trim() || !selectedChat || !roomId) return;
-        // console.log("reached")
 
         socket.emit('joinRoom', {
             user_id: userId,
             roomId: roomId
         });
 
-        // Optimistic update
-        setMessages(prev => [...prev, {
-            content: message,
-            sender: userId,
-            receiver: selectedChat._id,
-            // timestamp: new Date(),
-        }]);
+        const timestamp = new Date().toISOString();
+
+        // Optimistic update with sorted messages
+        setMessages(prev => {
+            const newMessages = [...prev, {
+                content: message,
+                sender: userId,
+                receiver: selectedChat._id,
+                timestamp: timestamp,
+            }];
+            return sortMessagesByTimestamp(newMessages);
+        });
 
         socket.emit('sendMessage', {
             content: message,
             from: userId,
             to: selectedChat._id,
-            roomId: roomId
+            roomId: roomId,
+            timestamp: timestamp
         });
 
         setMessage("");
+    };
+
+    // Format timestamp for display
+    const formatMessageTime = (timestamp) => {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     return (
@@ -216,7 +238,7 @@ export default function ChatPage() {
                                     <div className="ml-3 text-lg font-semibold">{selectedChat.name ? selectedChat.name : selectedChat.email}</div>
                                 </div>
                                 <button
-                                    // onClick={toggleProfile}
+                                    onClick={() => setIsProfileOpen(!isProfileOpen)}
                                     className="text-blue-500 hover:underline"
                                 >
                                     View Profile
@@ -230,14 +252,19 @@ export default function ChatPage() {
                                 ) : (
                                     messages.map((msg, index) => (
                                         <div key={index} className={`flex mb-4 ${msg.sender.toString() === userId ? "justify-end" : "justify-start"}`}>
-                                            {msg.sender !== userId && (
+                                            {msg.sender.toString() !== userId && (
                                                 <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover h-8 w-8 rounded-full" alt="" />
                                             )}
-                                            <div className={`py-3 px-4 rounded-lg text-white ${msg.sender.toString() === userId ? "bg-blue-500" : "bg-gray-400"} mx-2`}>
-                                                {msg.content}
+                                            <div className="flex flex-col">
+                                                <div className={`py-3 px-4 rounded-lg text-white ${msg.sender.toString() === userId ? "bg-blue-500" : "bg-gray-400"} mx-2`}>
+                                                    {msg.content}
+                                                </div>
+                                                <div className={`text-xs text-gray-500 mx-2 mt-1 ${msg.sender.toString() === userId ? "text-right" : "text-left"}`}>
+                                                    {formatMessageTime(msg.timestamp)}
+                                                </div>
                                             </div>
                                             {msg.sender.toString() === userId && (
-                                                <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover h-8 w-8 rounded-full" alt="" />
+                                                <img src="/default-avatar.png" className="object-cover h-8 w-8 rounded-full" alt="" />
                                             )}
                                         </div>
                                     ))
@@ -252,6 +279,7 @@ export default function ChatPage() {
                                     placeholder="Type a message..."
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                                 />
                                 <button onClick={sendMessage} className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-lg">
                                     Send
@@ -270,13 +298,13 @@ export default function ChatPage() {
                     } duration-300`}>
                     {selectedChat && (
                         <>
-                            <button /*onClick={toggleProfile}*/ className="absolute top-3 right-3 text-gray-500 hover:text-black">
+                            <button onClick={() => setIsProfileOpen(false)} className="absolute top-3 right-3 text-gray-500 hover:text-black">
                                 ✖
                             </button>
                             <div className="text-xl font-semibold mb-3">Profile</div>
-                            <img src={selectedChat?.picture} className="object-cover rounded-xl w-32 h-32 mx-auto" alt="" />
+                            <img src={selectedChat?.picture || "/default-avatar.png"} className="object-cover rounded-xl w-32 h-32 mx-auto" alt="" />
                             <div className="text-center mt-3">
-                                <div className="text-lg font-semibold">{selectedChat.name}</div>
+                                <div className="text-lg font-semibold">{selectedChat.name || selectedChat.email}</div>
                                 <div className="text-gray-500">Active now</div>
                             </div>
                             <div className="mt-5">

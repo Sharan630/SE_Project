@@ -9,7 +9,8 @@ export async function POST(req) {
         await connectdb();
 
         const { email, name, skills, imageLink, bio, phone } = await req.json();
-        if (!email || !name || !skills || !phone) {
+        console.log(email, name, skills, bio, phone);
+        if (!email || !name || !phone) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
