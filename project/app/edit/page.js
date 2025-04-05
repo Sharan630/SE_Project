@@ -18,7 +18,11 @@ export default function EditProfile() {
         linkedin: ""
     });
     const [loading, setLoading] = useState(true);
+    const [imageFile, setImageFile] = useState(null);
+    const [preview, setPreview] = useState(null);
+
     const router = useRouter();
+
 
     useEffect(() => {
         const email = sessionStorage.getItem("email");
@@ -54,10 +58,26 @@ export default function EditProfile() {
         fetchUser();
     }, [router]);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
+    // const handleChange = (e) => {
+    //     const { name, value } = e.target;
 
-        if (name === "skills") {
+    //     if (name === "skills") {
+    //         setUser({ ...user, [name]: value.split(",").map(skill => skill.trim()) });
+    //     } else if (name === "phone") {
+    //         if (/^\d{0,10}$/.test(value)) {
+    //             setUser({ ...user, [name]: value });
+    //         }
+    //     } else {
+    //         setUser({ ...user, [name]: value });
+    //     }
+    // };
+    const handleChange = (e) => {
+        const { name, value, files } = e.target;
+
+        if (name === "picture" && files?.[0]) {
+            setImageFile(files[0]);
+            setPreview(URL.createObjectURL(files[0]));
+        } else if (name === "skills") {
             setUser({ ...user, [name]: value.split(",").map(skill => skill.trim()) });
         } else if (name === "phone") {
             if (/^\d{0,10}$/.test(value)) {
@@ -68,11 +88,36 @@ export default function EditProfile() {
         }
     };
 
+
     const handleAvailabilityChange = (day, timeSlots) => {
         const updatedAvailability = user.availability.filter(a => a.day !== day);
         updatedAvailability.push({ day, timeSlots: timeSlots.split(",").map(slot => slot.trim()) });
         setUser({ ...user, availability: updatedAvailability });
     };
+
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+
+    //     if (user.phone && user.phone.length !== 10) {
+    //         alert("Phone number must be exactly 10 digits.");
+    //         return;
+    //     }
+
+    //     if (user.password && user.password.length < 6) {
+    //         alert("Password must be at least 6 characters long.");
+    //         return;
+    //     }
+
+    //     const role = sessionStorage.getItem('role');
+
+    //     try {
+    //         const res = await axios.post(`/api/update/${role}`, user);
+    //         alert("Profile updated successfully!");
+    //     } catch (err) {
+    //         console.error(err);
+    //         alert("Failed to update profile. Please try again later.");
+    //     }
+    // };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -82,15 +127,22 @@ export default function EditProfile() {
             return;
         }
 
-        if (user.password && user.password.length < 6) {
-            alert("Password must be at least 6 characters long.");
-            return;
-        }
-
         const role = sessionStorage.getItem('role');
 
         try {
-            const res = await axios.post(`/api/update/${role}`, user);
+            let imageUrl = user.picture;
+
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append("image", imageFile);
+
+                const imgRes = await axios.post("/api/imgupload", formData);
+                imageUrl = imgRes.data.imageUrl;
+            }
+
+            const updatedUser = { ...user, picture: imageUrl };
+
+            const res = await axios.post(`/api/update/${role}`, updatedUser);
             alert("Profile updated successfully!");
         } catch (err) {
             console.error(err);
@@ -117,7 +169,7 @@ export default function EditProfile() {
                             className="w-full bg-white bg-opacity-50 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
                         />
                     </div>
-                    
+                    {/*                     
                     <div>
                         <label className="block text-black py-2 font-bold">Profile Picture URL</label>
                         <input
@@ -127,7 +179,25 @@ export default function EditProfile() {
                             onChange={handleChange}
                             className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
                         />
+                    </div> */}
+                    <div>
+                        <label className="block text-black py-2 font-bold">Profile Picture</label>
+                        {preview || user.picture ? (
+                            <img
+                                src={preview || user.picture}
+                                alt="Profile Preview"
+                                className="h-24 w-24 object-cover rounded-full mb-2"
+                            />
+                        ) : null}
+                        <input
+                            type="file"
+                            name="picture"
+                            accept="image/*"
+                            onChange={handleChange}
+                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black"
+                        />
                     </div>
+
 
                     <div>
                         <label className="block text-black py-2 font-bold">Bio</label>

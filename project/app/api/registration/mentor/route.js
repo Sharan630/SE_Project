@@ -8,13 +8,13 @@ export async function POST(req) {
         await connectDB();
 
         const { email, name, skills, picture, experience, availability, bio, phone, fees } = await req.json();
-        // console.log(email, name, skills, picture, experience, availability, bio, phone);
-        if (!email || !name || !skills || !experience || !bio || !availability || !phone || !fees) {
+        console.log(email, name, skills, picture, experience, availability, bio, phone, fees);
+        if (!name || !skills || !experience || !bio || !availability || !phone || !fees) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
         const mentor = await User.findOne({ email, role: "mentor" });
-        // console.log(mentor);
+        console.log(mentor);
         if (!mentor) {
             return NextResponse.json({ message: "Mentor not found" }, { status: 404 });
         }

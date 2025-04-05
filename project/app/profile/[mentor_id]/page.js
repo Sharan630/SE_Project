@@ -1,5 +1,6 @@
 "use client";
-
+import React from 'react';
+import Script from 'next/script';
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useParams } from 'next/navigation';
@@ -21,6 +22,7 @@ import { useRouter } from "next/navigation";
 const MentorProfile = () => {
     const params = useParams();
     const mentorId = params.mentor_id;
+    const [menteeId, setMenteeId] = useState(null);
     const [mentorData, setMentorData] = useState({});
     const [skills, setSkills] = useState([]);
     const [availableTimes, setAvailableTimes] = useState([]);
@@ -28,12 +30,169 @@ const MentorProfile = () => {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
+    const AMOUNT = 1000;
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Fetch the logged-in mentee's ID
+
+
+
+    useEffect(() => {
+        const fetchMentee = async () => {
+            try {
+                const email = sessionStorage.getItem("email"); // Assuming email is stored in session
+                if (!email) {
+                    alert("Please log in.");
+                    router.push("/login");
+                    return;
+                }
+
+                const res = await axios.get(`/api/user/${email}`);
+                console.log(res);
+                console.log("Response structure:", JSON.stringify(res.data, null, 2));
+                console.log(res.data._id);
+
+                setMenteeId(res.data._id); // Setting mentee ID
+
+            } catch (error) {
+                console.error("Error fetching mentee ID:", error);
+            }
+        };
+
+        fetchMentee();
+    }, []);
+
+
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => {
+                console.log('Razorpay script loaded');
+                resolve(true);
+            };
+            script.onerror = () => {
+                console.error('Razorpay script failed to load');
+                resolve(false);
+            };
+            document.body.appendChild(script);
+        });
+    };
+
+    const handlePayment = async () => {
+        if (!menteeId) {
+            console.log(mentorId)
+            console.log(menteeId)
+            alert("Mentee not found. Please log in.");
+            return;
+        }
+        setIsProcessing(true);
+        try {
+            if (!window.Razorpay) {
+                const loaded = await loadRazorpayScript();
+                if (!loaded) {
+                    throw new Error('Failed to load Razorpay script');
+                }
+            }
+            // const response = await fetch('/api/create-order', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({ amount: AMOUNT * 100, currency: 'INR' }),
+            // });
+            const amountInPaise = mentorData.fees;
+            const response = await fetch('/api/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amountInPaise,
+                    items: {
+                        mentor: "mentorId",
+                        mentee: "menteeId",
+                        date: new Date().toISOString(),
+                        duration: 60
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create order');
+            }
+
+            const data = await response.json();
+
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: AMOUNT * 100,
+                currency: 'INR',
+                name: 'SE Project',
+                description: 'Payment Gateway',
+                order_id: data.orderId,
+                handler: (response) => handleSuccess(response, data.orderId),
+                prefill: {
+                    name: 'John Doe',
+                    email: 'john@example.com',
+                    contact: '9999999999',
+                },
+                notes: {
+                    address: 'Example Street',
+                    mentor: mentorId,      // Add mentor ID to notes
+                    mentee: menteeId,      // Add mentee ID to notes
+                    date: new Date().toISOString(),
+                    duration: 60
+                },
+                theme: {
+                    color: '#3880ff',
+                },
+            };
+
+            const rzp1 = new window.Razorpay(options);
+            rzp1.open();
+        } catch (e) {
+            console.error('Error in payment', e);
+            alert('Payment failed, please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleSuccess = async (response, orderId) => {
+        setIsProcessing(false);
+        console.log('Payment Successful', response);
+
+        try {
+            const captureResponse = await fetch('/api/capture-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    payment_id: response.razorpay_payment_id,
+                    mentor_id: mentorId,    // Include mentor ID
+                    mentee_id: menteeId,
+                }),
+            });
+
+            const data = await captureResponse.json();
+
+            if (data.redirectUrl) {
+                window.location.replace(data.redirectUrl);
+            }
+        } catch (error) {
+            console.error('Error capturing payment', error);
+        }
+    };
+
     useEffect(() => {
         const fetchMentorData = async () => {
             setIsLoading(true);
             try {
                 const res = await axios.get(`/api/user/id/${mentorId}`);
                 setMentorData(res.data);
+
+
                 setSkills(res.data.skills || []);
 
                 // Extract availability from the mentor data
@@ -48,6 +207,7 @@ const MentorProfile = () => {
 
         fetchMentorData();
     }, [mentorId]);
+
 
     const similarMentors = [
         { id: 1, name: "James Anderson", title: "Cloud Solutions Architect", experience: "8 years", rating: 4.8, image: "/api/placeholder/80/80" },
@@ -101,9 +261,17 @@ const MentorProfile = () => {
             <div className="max-w-5xl mx-auto">
                 {/* Cover Image */}
                 <div className="h-64 w-full relative rounded-t-xl overflow-hidden shadow-lg">
-                    <img
-                        src="/api/placeholder/1200/400"
+                    {/* <img
+                        src="/https://stock.adobe.com/in/templates/abstract-liquid-shapes-background/512202172"
                         alt="Cover background"
+                        className="w-full h-full object-cover"
+                    /> */}
+                    <video
+                        src="/uploads/cover-bg.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
                         className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
@@ -119,7 +287,7 @@ const MentorProfile = () => {
                                 <div className="flex items-start mb-6">
                                     <div className="relative mr-6">
                                         <img
-                                            src={mentorData.picture || "/api/placeholder/120/120"}
+                                            src={mentorData.picture || "/api/placeholder/1200/120"}
                                             alt="Profile"
                                             className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                                         />
@@ -133,36 +301,36 @@ const MentorProfile = () => {
                                             <h1 className="text-2xl font-bold text-gray-800">{mentorData.name || "Mentor Name"}</h1>
                                             <div className="flex items-center ml-4">
                                                 <FaStar className="text-yellow-400" />
-                                                <span className="ml-1 text-gray-700 font-medium">4.9</span>
+                                                <span className="ml-1 text-gray-700 font-medium">4.0</span>
                                             </div>
                                         </div>
                                         <p className="text-lg text-gray-600 font-medium">{mentorData.title || "Mentor Title"}</p>
 
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-gray-600">
-                                            <span className="flex items-center text-sm">
+                                            {/* <span className="flex items-center text-sm">
                                                 <FaMapMarkerAlt className="mr-1" />
                                                 {mentorData.location || "Location"}
-                                            </span>
+                                            </span> */}
                                             <span className="flex items-center text-sm">
                                                 <FaChalkboardTeacher className="mr-1" />
                                                 {mentorData.experience || "0"} years experience
                                             </span>
-                                            <span className="flex items-center text-sm">
+                                            {/* <span className="flex items-center text-sm">
                                                 <FaUserGraduate className="mr-1" />
                                                 {mentorData.connected.length || "20+"} mentees
-                                            </span>
+                                            </span> */}
                                         </div>
 
                                         <div className="flex space-x-3 mt-4">
                                             <a href={mentorData.linkedin || "#"} className="text-blue-600 hover:text-blue-800 transition">
                                                 <FaLinkedin size={20} />
                                             </a>
-                                            <a href={mentorData.github || "#"} className="text-gray-700 hover:text-gray-900 transition">
+                                            {/* <a href={mentorData.github || "#"} className="text-gray-700 hover:text-gray-900 transition">
                                                 <FaGithub size={20} />
                                             </a>
                                             <a href={mentorData.twitter || "#"} className="text-blue-400 hover:text-blue-600 transition">
                                                 <FaTwitter size={20} />
-                                            </a>
+                                            </a> */}
                                             <a href={`mailto:${mentorData.email}`} className="text-red-500 hover:text-red-700 transition">
                                                 <MdEmail size={20} />
                                             </a>
@@ -250,9 +418,9 @@ const MentorProfile = () => {
                                                     <span className="text-gray-500 ml-1">/month</span>
                                                 </div>
                                             </div>
-                                            <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                            {/* <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                                 4 spots left
-                                            </div>
+                                            </div> */}
                                         </div>
 
                                         <div className="space-y-4 mb-6">
@@ -270,7 +438,7 @@ const MentorProfile = () => {
                                                     </svg>
                                                     <span className="text-gray-600">Personalized guidance & feedback</span>
                                                 </li>
-                                                <li className="flex items-start">
+                                                {/* <li className="flex items-start">
                                                     <svg className="w-4 h-4 text-green-500 mt-1 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                     </svg>
@@ -281,7 +449,7 @@ const MentorProfile = () => {
                                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                     </svg>
                                                     <span className="text-gray-600">2 weeks of follow-up support</span>
-                                                </li>
+                                                </li> */}
                                             </ul>
                                         </div>
 
@@ -294,6 +462,27 @@ const MentorProfile = () => {
                                             Book a Session
                                         </motion.button>
 
+                                        {/* <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-center shadow-sm transition duration-150"
+                                            onClick={() => Pay()}
+                                        >
+                                            Pay
+                                        </motion.button> */}
+                                        {/* <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" /> */}
+                                        <div className="flex flex-col items-center justify-center py-3 bg-white-200">
+                                            <motion.button
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={handlePayment}
+                                                disabled={isProcessing}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                                            >
+                                                {isProcessing ? 'Processing...' : 'Pay Now'}
+                                            </motion.button>
+
+                                        </div>
                                         <p className="text-xs text-gray-500 text-center mt-4">
                                             You won't be charged until after the session
                                         </p>
@@ -332,7 +521,9 @@ const MentorProfile = () => {
                             ))}
                         </div>
                     </div>
+
                 </div>
+
             </div>
         </div>
     );

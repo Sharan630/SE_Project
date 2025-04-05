@@ -24,6 +24,7 @@ export async function POST(req) {
         if (imageLink) mentee.picture = imageLink;
         if (bio) mentee.bio = bio;
         if (phone) mentee.phone = phone;
+        
 
         await mentee.save();
 

@@ -20,6 +20,9 @@ const Form = () => {
     const [timeSlots, setTimeSlots] = useState([]);
     const [imageFile, setImageFile] = useState(null);
     const [imagePath, setImagePath] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [imagePreview, setImagePreview] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [fees, setfees] = useState('');
 
     const router = useRouter();
@@ -69,11 +72,46 @@ const Form = () => {
         setAvailability(newAvailability);
     };
 
+    // const handleFileChange = (event) => {
+    //     const file = event.target.files[0];
+    //     setImageFile(file);
+    // };
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        setImageFile(file);
+        if (!file) return;
+        if (file) {
+            setImageFile(file);
+            // Create a preview URL for the selected image
+            setImagePreview(URL.createObjectURL(file));
+        }
     };
-
+    const handleUploadImage = async () => {
+        if (!imageFile) {
+            alert("Please select an image first!");
+            return;
+        }
+        
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append("image", imageFile);
+            
+            const uploadResponse = await axios.post("/api/imgupload", formData);
+            
+            if (uploadResponse.status === 200 && uploadResponse.data.success) {
+                setImageUrl(uploadResponse.data.imageUrl);
+                alert("Image uploaded successfully!");
+            } else {
+                // alert("Image upload failed!");
+                throw new Error(uploadResponse.data.error || "Upload failed!");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Upload error: " + (error.response?.data?.error || error.message));
+        } finally {
+            setUploading(false);
+        }
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -86,27 +124,33 @@ const Form = () => {
             alert('Name, email, password and role are required');
             return;
         }
+        if (role === 'mentor' && !fees) {
+            alert('Fees are required for mentors');
+            return;
+        }
 
         try {
             // Upload image if provided
-            let uploadedImagePath = "";
-            if (imageFile) {
-                const formData = new FormData();
-                formData.append("image", imageFile);
-
-                const uploadResponse = await axios.post("/api/upload", formData);
-                console.log("Upload Response:", uploadResponse.data);
-
-                if (!uploadResponse.data.success) {
-                    alert("Image upload failed!");
-                    return;
-                }
-                uploadedImagePath = uploadResponse.data.path;
-                setImagePath(uploadedImagePath);
-            }
+            let uploadedImageUrl = imageUrl;
 
             // Send registration data to API
-            const email = sessionStorage.getItem('email');
+            if (imageFile) {
+                setUploading(true);
+                const formData = new FormData();
+                formData.append("image", imageFile);
+    
+                const uploadResponse = await axios.post("/api/imgupload", formData);
+                if (uploadResponse.data.success) {
+                    uploadedImageUrl = uploadResponse.data.imageUrl;
+                } else {
+                    alert("Image upload failed!");
+                    setUploading(false);
+                    return;
+                }
+                setUploading(false);
+            }
+             const email = sessionStorage.getItem('email');
+            // console.log(role);
             const response = await axios.post(`/api/registration/${role}`, {
                 name,
                 email,
@@ -114,17 +158,19 @@ const Form = () => {
                 role,
                 phone,
                 bio,
+                fees,
                 skills,
                 experience,
                 availability,
-                picture: uploadedImagePath,
+                picture: uploadedImageUrl,
             });
 
             console.log('Registration successful:', response.data);
             sessionStorage.setItem('phone', phone);
-            alert('Registration successful');
+            
             sessionStorage.setItem('name', name);
             sessionStorage.setItem('registered', 'true');
+            alert('Registration successful');
             router.push('/home');
         } catch (error) {
             console.error('Registration failed:', error);
@@ -212,7 +258,7 @@ const Form = () => {
                         </div>}
 
                         {/* Profile Picture */}
-                        <div>
+                        {/* <div>
                             <label className="block text-sm font-medium text-gray-700">
                                 Profile Picture
                             </label>
@@ -222,6 +268,41 @@ const Form = () => {
                                 className="mt-1 p-3 border rounded-md text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full"
                                 accept="image/*"
                             />
+                        </div> */}
+                          <div className="col-span-full">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Profile Picture
+                            </label>
+                            <div className="flex items-center gap-4 mt-2">
+                                <input
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    className="p-2 border rounded-md text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    accept="image/*"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleUploadImage}
+                                    disabled={uploading || !imageFile}
+                                    className={`px-4 py-2 rounded-md text-white ${uploading || !imageFile ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                                >
+                                    {uploading ? "Uploading..." : "Upload"}
+                                </button>
+                            </div>
+                            {imagePreview && (
+                                <div className="mt-2">
+                                    <img 
+                                        src={imagePreview} 
+                                        alt="Preview" 
+                                        className="h-20 w-20 object-cover rounded-full border-2 border-gray-300" 
+                                    />
+                                </div>
+                            )}
+                            {imageUrl && (
+                                <p className="text-sm text-green-600 mt-1">
+                                    Image uploaded successfully! ✓
+                                </p>
+                            )}
                         </div>
                     </div>
 
