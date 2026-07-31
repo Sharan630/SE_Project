@@ -10,6 +10,14 @@ const UserSchema = new mongoose.Schema({
     skills: { type: [String], default: [] },
     experience: { type: String, default: 0 },
     phone: { type: String, trim: true },
+    reports: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Report'
+    }],
+    reportedCount: {
+        type: Number,
+        default: 0
+    },
     availability: {
         type: [{ day: String, timeSlots: [String] }],
         default: []
@@ -19,7 +27,12 @@ const UserSchema = new mongoose.Schema({
         average: { type: Number, default: 0 },
         reviews: [{ userId: mongoose.Schema.Types.ObjectId, rating: Number, comment: String }]
     },
-    connected: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    connected: [
+        {
+            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            endDate: { type: Date }
+        }
+    ],
     linkedin: { type: String, trim: true },
 }, { timestamps: true });
 

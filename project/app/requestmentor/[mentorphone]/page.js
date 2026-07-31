@@ -10,7 +10,7 @@ export default function RequestMentorship() {
     const router = useRouter();
 
     const { mentorphone } = useParams();
-    console.log(mentorphone);
+    // console.log(mentorphone);
     if (!mentorphone) {
         router.back();
         return;

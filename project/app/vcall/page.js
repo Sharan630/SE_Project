@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Phone, PhoneOff, User, WindArrowDown, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Phone, PhoneOff, User, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { initializeSendbird, authenticateUser } from "../../utils/sendbird";
 import SendBirdCall from "sendbird-calls";
 import { useRouter } from "next/navigation";
@@ -18,32 +18,63 @@ export default function VideoCallInterface() {
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const callRef = useRef(null);
-    const email = sessionStorage.getItem("email");
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [email, setEmail] = useState(null);
     const router = useRouter();
     const [myId, setMyId] = useState('');
     const [incomingCall, setIncomingCall] = useState(null);
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOn, setIsVideoOn] = useState(true);
 
+    // Initialize SendBird and authenticate user once
+
     useEffect(() => {
-        initializeSendbird();
-        if (!email) {
-            router.push('/login');
+        const storedEmail = sessionStorage.getItem("email") || localStorage.getItem("email");
+        console.log("Retrieved email for video call:", storedEmail);
+
+        if (!storedEmail) {
+            router.push('/chat');
             return;
         }
+        setEmail(storedEmail);
+    }, []);
 
-        const fetchUserData = async () => {
+    useEffect(() => {
+        if (!email) return;
+
+        const setupSendbird = async () => {
             try {
+                // Initialize SendBird just once
+                initializeSendbird();
+
+                // Fetch user data
                 const res = await axios.get(`/api/user/${email}`);
-                setMyId(res.data._id);
-                authenticateUser(res.data._id);
+                const userId = res.data._id;
+                setMyId(userId);
+
+                // Authenticate user just once
+                await authenticateUser(userId);
+                setIsInitialized(true);
+
+                console.log("SendBird initialized and authenticated for user:", userId);
             } catch (error) {
-                console.error("Failed to fetch user data", error);
+                console.error("Failed to initialize SendBird:", error);
             }
         };
 
-        fetchUserData();
+        setupSendbird();
 
+        return () => {
+            // Clean up listeners when component unmounts
+            SendBirdCall.removeAllListeners();
+        };
+    }, [email, router]);
+
+    // Set up call listeners only after initialization
+    useEffect(() => {
+        if (!isInitialized) return;
+
+        // Set up incoming call listener
         SendBirdCall.addListener("incoming-call-listener", {
             onRinging: (call) => {
                 setCallStatus("incoming");
@@ -56,57 +87,63 @@ export default function VideoCallInterface() {
                 call.onEnded = () => {
                     setCallStatus("idle");
                     setIncomingCaller(null);
-                }
+                };
             },
         });
 
         return () => {
             SendBirdCall.removeListener("incoming-call-listener");
         };
-    }, []);
+    }, [isInitialized]);
 
     const startCall = async () => {
-        if (!calleeId) {
+        if (!calleeId || !isInitialized) {
             return;
         }
 
         setCallStatus("calling");
 
-        const res = await axios.get(`/api/user/${calleeId}`);
-        const id = res.data._id;
+        try {
+            // Get recipient user ID
+            const res = await axios.get(`/api/user/${calleeId}`);
+            const recipientId = res.data._id;
 
-        const callParams = {
-            userId: id,
-            isVideoCall: true,
-            callOption: {
-                localMediaView: document.getElementById('local_video_element_id'),
-                remoteMediaView: document.getElementById('remote_video_element_id'),
-                audioEnabled: true,
-                videoEnabled: true
-            }
-        };
+            const callParams = {
+                userId: recipientId,
+                isVideoCall: true,
+                callOption: {
+                    localMediaView: document.getElementById('local_video_element_id'),
+                    remoteMediaView: document.getElementById('remote_video_element_id'),
+                    audioEnabled: true,
+                    videoEnabled: true
+                }
+            };
 
-        const call = SendBirdCall.dial(callParams, (call, error) => {
-            if (error) {
+            const call = SendBirdCall.dial(callParams, (call, error) => {
+                if (error) {
+                    setCallStatus("idle");
+                    console.error("Call failed:", error);
+                    return;
+                }
+            });
+
+            callRef.current = call;
+
+            call.onEstablished = () => {
+                setCallStatus("connected");
+            };
+
+            call.onEnded = () => {
                 setCallStatus("idle");
-                console.error("Call failed:", error);
-                return;
-            }
-        });
+                callRef.current = null;
+            };
 
-        callRef.current = call;
-
-        call.onEstablished = () => {
-            setCallStatus("connected");
-        };
-
-        call.onEnded = () => {
+            call.setLocalMediaView(document.getElementById('local_video_element_id'));
+            call.setRemoteMediaView(document.getElementById('remote_video_element_id'));
+        } catch (error) {
+            console.error("Error starting call:", error);
             setCallStatus("idle");
-            callRef.current = null;
-        };
-
-        call.setLocalMediaView(document.getElementById('local_video_element_id'));
-        call.setRemoteMediaView(document.getElementById('remote_video_element_id'));
+        }
     };
 
     const handleCallAction = () => {
@@ -124,7 +161,6 @@ export default function VideoCallInterface() {
     };
 
     const acceptIncomingCall = () => {
-        // const call = SendBirdCall.getActiveCall();
         if (incomingCall) {
             const acceptParams = {
                 callOption: {
@@ -139,8 +175,6 @@ export default function VideoCallInterface() {
             setCallStatus("connected");
             callRef.current = incomingCall;
         }
-        // if (call) {
-        // }
     };
 
     const endCall = () => {
@@ -159,6 +193,7 @@ export default function VideoCallInterface() {
             default: return "Ready to call";
         }
     };
+
     const toggleMute = () => {
         if (callRef && callRef.current) {
             if (isMuted) {
@@ -186,7 +221,7 @@ export default function VideoCallInterface() {
             <Card className="w-full max-w-4xl">
                 <CardHeader className="bg-blue-500 text-white rounded-t-lg">
                     <CardTitle className="flex items-center">
-                        <User className="mr-2" /> Sendbird Video Call
+                        <User className="mr-2" /> Video Call
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
@@ -226,7 +261,7 @@ export default function VideoCallInterface() {
                     <div className="flex space-x-4">
                         <Input
                             type="text"
-                            placeholder="Enter user ID to call"
+                            placeholder="Enter user Email to call"
                             value={calleeId}
                             onChange={(e) => setCalleeId(e.target.value)}
                             disabled={callStatus !== "idle"}
@@ -236,6 +271,7 @@ export default function VideoCallInterface() {
                             onClick={handleCallAction}
                             variant={callStatus === "incoming" ? "default" : callStatus === "connected" ? "destructive" : "primary"}
                             className="w-36"
+                            disabled={!isInitialized && callStatus === "idle"}
                         >
                             {callStatus === "incoming" ? (
                                 <>Accept Call</>
@@ -255,6 +291,7 @@ export default function VideoCallInterface() {
                             onClick={toggleMute}
                             variant={isMuted ? "outline" : "default"}
                             className="w-24"
+                            disabled={callStatus !== "connected"}
                         >
                             {isMuted ? (
                                 <>
@@ -272,6 +309,7 @@ export default function VideoCallInterface() {
                             onClick={toggleVideo}
                             variant={isVideoOn ? "default" : "outline"}
                             className="w-24"
+                            disabled={callStatus !== "connected"}
                         >
                             {isVideoOn ? (
                                 <>
@@ -284,7 +322,6 @@ export default function VideoCallInterface() {
                             )}
                         </Button>
                     </div>
-
                 </CardContent>
             </Card>
         </div>

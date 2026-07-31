@@ -1,6 +1,6 @@
 import SendBirdCall from "sendbird-calls";
 
-const APP_ID = "9DE63BF5-A5A0-4423-9C5D-1C3EBB6FF232";
+const APP_ID = "580166CB-70E8-4538-B4A6-B99F3762D5FA";
 
 export const initializeSendbird = () => {
   if (typeof window !== "undefined") {

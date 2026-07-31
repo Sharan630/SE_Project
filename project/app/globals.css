@@ -1,16 +1,28 @@
 @import "tailwindcss";
+/* In globals.css */
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+/* 
+.font-feature-ss01 {
+  font-feature-settings: "ss01";
+} */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+
+/* @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+} */
 
 @media (prefers-color-scheme: dark) {
   :root {

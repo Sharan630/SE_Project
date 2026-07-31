@@ -1,0 +1,25 @@
+name: mentorship-platform
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
+        NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID}
+    container_name: mentorship_app
+    restart: always
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.local
+        required: false
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=production
+
+

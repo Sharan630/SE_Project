@@ -7,9 +7,9 @@ export async function POST(req) {
     try {
         await connectDB();
 
-        const { email, name, skills, picture, experience, availability, bio, phone, fees } = await req.json();
-        // console.log(email, name, skills, picture, experience, availability, bio, phone);
-        if (!email || !name || !skills || !experience || !bio || !availability || !phone || !fees) {
+        const { email, name, skills, picture, experience, availability, bio, phone, fees, linkedin } = await req.json();
+        // console.log(email, name, skills, picture, experience, availability, bio, phone, fees);
+        if (!email || !name || skills.length === 0 || !experience || !bio || availability.length === 0 || !phone || !fees) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
 
@@ -33,6 +33,7 @@ export async function POST(req) {
 
         if (phone) mentor.phone = phone;
         if (fees) mentor.fees = fees;
+        if (linkedin) mentor.linkedin = link;
 
 
         await mentor.save();

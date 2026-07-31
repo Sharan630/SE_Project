@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Review from "@/models/review";
 import User from "@/models/user";
-import connectDB from "@/utils/connectDB";
+import connectDB from "@/database/connectdb";
+
 
 export async function POST(req) {
     try {
@@ -15,7 +16,12 @@ export async function POST(req) {
             return NextResponse.json({ message: "Mentor, mentee, and rating are required." }, { status: 400 });
         }
 
-        const newReview = new Review({ mentor, mentee, rating, comment });
+        const newReview = await Review.findOne({ mentee: mentee, mentor: mentor, done: false });
+
+        newReview.rating = rating;
+        newReview.comment = comment;
+        newReview.done = true;
+
         await newReview.save();
 
         const mentorUser = await User.findById(mentor);

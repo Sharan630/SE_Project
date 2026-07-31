@@ -8,8 +8,8 @@ export async function POST(req) {
 
         await connectdb();
 
-        const { email, name, skills, imageLink, bio, phone } = await req.json();
-        console.log(email, name, skills, bio, phone);
+        const { email, name, skills, picture, bio, phone, linkedin } = await req.json();
+        // console.log(email, name, skills, bio, phone);
         if (!email || !name || !phone) {
             return NextResponse.json({ message: "provide parameters" }, { status: 404 });
         }
@@ -21,9 +21,10 @@ export async function POST(req) {
 
         if (name) mentee.name = name;
         if (skills) mentee.skills = skills;
-        if (imageLink) mentee.picture = imageLink;
+        if (picture) mentee.picture = picture;
         if (bio) mentee.bio = bio;
         if (phone) mentee.phone = phone;
+        if (linkedin) mentee.linkedin = linkedin;
 
         await mentee.save();
 

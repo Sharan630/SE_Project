@@ -9,10 +9,10 @@ export async function POST(req) {
 
         await connectdb();
 
-        const { email, name, skills, fees, picture, experience, availability, bio, phone } = await req.json();
+        const { email, name, skills, fees, picture, experience, availability, bio, phone, linkedin } = await req.json();
         console.log(name, skills, picture, experience, availability, bio, phone, fees);
-        if (!name || !skills || !experience || !availability || !phone || !bio) {
-            return NextResponse.json({ message: "provide parameters" }, { status: 404 });
+        if (!email || !name) {
+            return NextResponse.json({ message: "Email and Name are required parameters" }, { status: 400 });
         }
 
         const mentor = await User.findOne({ email, role: "mentor" });
@@ -28,6 +28,7 @@ export async function POST(req) {
         if (bio) mentor.bio = bio;
         if (phone) mentor.phone = phone;
         if (fees) mentor.fees = fees;
+        if (linkedin) mentor.linkedin = linkedin;
 
         await mentor.save();
 

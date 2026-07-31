@@ -7,7 +7,7 @@ export async function GET(req, { params }) {
     try {
 
         const { id } = await params;
-        console.log(id);
+        // console.log(id);
         if (!id) {
             return NextResponse.json({ message: "User ID is required" }, { status: 400 });
         }

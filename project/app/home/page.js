@@ -1,151 +1,242 @@
 'use client';
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaFacebookF, FaInstagram, FaXTwitter, FaLinkedinIn } from "react-icons/fa6"
 import { FaSearch, FaEdit, FaChartBar } from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-
-const mentors = [
-  {
-    name: "Ayla S.",
-    role: "Top-rated marketing expe...",
-    price: "$150/month",
-    services: [
-      { name: "Intro Session", price: "$39" },
-      { name: "CV Review", price: "$69" },
-      { name: "Launch Plan", price: "$129" },
-    ],
-  },
-  {
-    name: "Francois J.",
-    role: "Full-Stack Software Deve...",
-    price: "$99/month",
-    services: [
-      { name: "Intro Session", price: "$39" },
-      { name: "CV Review", price: "$69" },
-      { name: "Launch Plan", price: "$129" },
-    ],
-  },
-  {
-    name: "Annie L.",
-    role: "UX Designer",
-    price: "$50/month",
-    services: [
-      { name: "Intro Session", price: "$39" },
-      { name: "Portfolio Review", price: "$69" },
-      { name: "Expert Session", price: "$140" },
-    ],
-  },
-];
+import Link from "next/link";
+import Navbar from "../components/ui/navbar";
 
 const Home = () => {
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [email, setEmail] = useState(null);
+  const [mentors, setMentors] = useState([]);
+  const [featuredMentor, setFeaturedMentor] = useState(null);
   const router = useRouter();
+  const [role, setrole] = useState('');
 
   useEffect(() => {
     // console.log(Cookies.get('email'));
     // console.log(Cookies.get('pass'));
     const email = sessionStorage.getItem("email");
     if (!email) {
-      router.push("/login");
+
+      sessionStorage.setItem('guest', '1');
+
+      // router.push("/login");
+    } else {
+      setIsLoggedIn(true);
+      // console.log(email);
+      setEmail(email);
     }
 
     const fetch = async () => {
       const response = await axios.get(`/api/user/${email}`);
       const role = response.data.role;
       // console.log(role);
+      setrole(response.data.role);
       sessionStorage.setItem("role", role);
       sessionStorage.setItem('name', response.data.name);
     }
 
-    fetch();
+    if (email && email !== 'undefined')
+      fetch();
+
+    const fetchmentor = async () => {
+      const res = await axios.get('/api/user/mentors');
+      setMentors(res.data);
+      console.log(res.data);
+      setFeaturedMentor(res.data);
+    }
+
+    fetchmentor();
 
   }, [])
 
+  useEffect(() => {
+    const email = sessionStorage.getItem('email');
+    const role = sessionStorage.getItem('role');
+
+    const fetchReviews = async () => {
+      try {
+        const response = await axios.get(`/api/feedback/${email}`);
+        const reviews = response.data.reviews;
+
+        if (reviews && reviews.mentor && reviews.mentee) {
+          // console.log(reviews);
+          // console.log(reviews.mentor._id);
+
+          sessionStorage.setItem('feedback', reviews.mentor._id);
+          sessionStorage.setItem('mentee', reviews.mentee);
+
+          router.push('/feedback');
+        }
+      } catch (error) {
+        console.error('Error fetching feedback:', error);
+      }
+    };
+
+    if (email && role === 'mentee') {
+      fetchReviews();
+    }
+  }, [router]);
+
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    setIsLoggedIn(false);
+    router.push("/");
+  };
+
   return (
+
+
     <div className="font-inter text-gray-900 bg-white">
+
+
       {/* Navbar */}
       <nav className="fixed top-0 left-0 w-full bg-white shadow-md py-4 px-12 flex flex-row justify-between items-center z-50">
-        <h1 className="text-3xl font-bold text-gray-900">MentorClone</h1>
+        <h1 className="text-3xl font-bold text-gray-900">GuidanceHub</h1>
         <div className="flex space-x-8">
-          <button className="text-gray-800 font-medium hover:text-blue-600">Log in</button>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">Sign Up</button>
+
+          {!isLoggedIn ? (
+            <>
+              <button onClick={() => router.push("/login")} className="text-gray-800 font-medium hover:text-blue-600">Log in</button>
+              <button onClick={() => router.push("/login")} className="bg-blue-600 text-white px-6 py-2 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">Sign Up</button>
+            </>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="bg-gray-800 text-white px-6 py-2 rounded-lg text-lg font-semibold hover:bg-gray-900 transition"
+              >
+                Dashboard
+              </button>
+
+              {/* Dropdown Menu */}
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
+                  <ul className="text-gray-800">
+                    <li><a href="/myprofile" className="block px-4 py-2 hover:bg-gray-100">My Profile</a></li>
+                    <li><a href="/edit" className="block px-4 py-2 hover:bg-gray-100">Edit Profile</a></li>
+                    <li><a href="/register" className="block px-4 py-2 hover:bg-gray-100">Registration</a></li>
+                    <li><a href="/chat" className="block px-4 py-2 hover:bg-gray-100">Chat</a></li>
+                    <li><a href="/search" className="block px-4 py-2 hover:bg-gray-100">Search</a></li>
+                    {role === 'admin' && <li><a href="/admin" className="block px-4 py-2 hover:bg-gray-100">Admin Panel</a></li>}
+                    {role === 'mentor' && <li><a href="/requests/me" className="block px-4 py-2 hover:bg-gray-100">Mentee's Request</a></li>}
+                    <li>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100"
+                      >
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </nav>
+      <header
+        className="relative bg-cover bg-bottom text-white text-center pt-40 pb-28 px-6"
+        style={{
+          backgroundImage: "url('/uploads/mentormentee.avif')",
+          backgroundPositionY: '20%'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/30 z-0" /> {/* Optional dark overlay for contrast */}
 
-      {/* Category Navigation */}
-      <div className="bg-gray-100 py-4 mt-16 shadow-sm">
-        <div className="container mx-auto flex justify-center space-x-8 text-gray-700 font-medium">
-          {["Engineering", "Design", "Marketing", "Product", "Business"].map((category, index) => (
-            <button key={index} className="hover:text-blue-600 transition">{category} Mentors</button>
-          ))}
-        </div>
-      </div>
+        <div className="relative z-10">
 
-      {/* Hero Section */}
-      <header className="bg-blue-600 text-white text-center pt-40 pb-28 px-6">
-        <motion.h1
-          className="text-5xl md:text-6xl font-extrabold leading-tight max-w-4xl mx-auto"
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-        >
-          Find a mentor to supercharge your career
-        </motion.h1>
-        <motion.p
-          className="text-xl mt-4 max-w-2xl mx-auto opacity-80"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 1 }}
-        >
-          Get 1-on-1 mentorship from industry professionals and accelerate your learning.
-        </motion.p>
-        <div className="mt-8 flex justify-center">
-          <input
-            type="text"
-            placeholder="Search mentors by skill, company, or industry..."
-            className="w-3/5 md:w-2/5 p-4 rounded-l-lg border border-blue-300 text-gray-800 focus:outline-none bg-white shadow-sm"
-          />
-          <button className="bg-yellow-500 text-white px-6 py-4 rounded-r-lg font-semibold hover:bg-yellow-600 transition">Search</button>
+          <motion.h1
+            className="text-5xl md:text-6xl font-extrabold leading-tight max-w-4xl mx-auto"
+            initial={{ opacity: 0, y: -50, color: "#ffffff" }}
+            animate={{
+              opacity: 20,
+              y: 0,
+              color: ["#ffffff", "#38bdf8", "#facc15", "#ffffff"], // white → blue → yellow → white
+            }}
+            transition={{
+              duration: 6,
+              ease: "easeInOut",
+              repeat: Infinity,
+              repeatType: "loop",
+            }}
+          >
+            Find a mentor to supercharge your career
+          </motion.h1>
+
+          <motion.p
+            className="text-xl mt-4 max-w-2xl mx-auto opacity-80"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 1 }}
+          >
+            Get 1-on-1 mentorship from industry professionals and accelerate your learning.
+          </motion.p>
+
+          <div className="mt-8 flex justify-center">
+            <input
+              type="text"
+              placeholder="Search mentors"
+              className="w-3/5 md:w-2/5 p-4 rounded-l-lg border border-blue-300 text-gray-800 focus:outline-none bg-white shadow-sm"
+              onFocus={() => router.push("/search")}
+            />
+            <button
+              onClick={() => router.push("/search")}
+              className="bg-blue-500 text-white px-6 py-4 rounded-r-lg font-semibold hover:bg-blue-600 transition"
+            >
+              Search
+            </button>
+          </div>
         </div>
       </header>
+
 
       <section className="bg-gray-100 py-16 px-6 rounded-3xl">
         <div className="container mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-12">
 
-          {/* Mentor Card - Left Side */}
-          <div className="relative w-full max-w-sm lg:max-w-md lg:flex-shrink-0">
-            <div className="absolute top-4 left-4 w-full h-full bg-white rounded-xl shadow-lg transform rotate-1"></div>
-            <div className="relative bg-white p-6 rounded-xl shadow-2xl">
-              <div className="flex items-center space-x-4">
-                <img
-                  src="https://via.placeholder.com/80"
-                  alt="Mentor"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
-                />
-                <div>
-                  <h3 className="text-lg font-semibold">Akash Aloti</h3>
-                  <p className="text-gray-500 text-sm">Staff Software Engineer</p>
+          {featuredMentor && (
+            <div className="relative w-full max-w-sm lg:max-w-md lg:flex-shrink-0">
+              <div className="absolute top-4 left-4 w-full h-full bg-white rounded-xl shadow-lg transform rotate-1"></div>
+              <div className="relative bg-white p-6 rounded-xl shadow-2xl">
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={featuredMentor.picture || "https://via.placeholder.com/80"} // optional image field fallback
+                    alt={featuredMentor.name}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+                  />
+                  <div>
+                    <h3 className="text-lg font-semibold">{featuredMentor.name}</h3>
+                    <p className="text-gray-500 text-sm">{featuredMentor.role}</p>
+                    <p className="text-gray-500 text-sm">{featuredMentor.bio}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {featuredMentor.skills?.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                  <p className="text-sm font-semibold">
+                    Mentorship <span className="text-green-600">{featuredMentor.fees}/month</span>
+                  </p>
                 </div>
               </div>
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                <p className="text-sm font-semibold">Mentorship <span className="text-green-600">$240/month</span></p>
-              </div>
-              <div className="mt-4 space-y-2">
-                {["Intro Session", "CV Review", "Expert Session"].map((session, i) => (
-                  <button
-                    key={i}
-                    className="w-full py-3 text-gray-700 bg-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300"
-                  >
-                    {session}
-                  </button>
-                ))}
-              </div>
             </div>
-          </div>
+          )}
+
 
           {/* Right Side Content */}
           <div className="flex-1 max-w-2xl">
@@ -161,12 +252,10 @@ const Home = () => {
             {/* Features List in Two Columns */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-gray-700">
               {[
-                "Thousands of mentors available",
                 "Flexible program structures",
                 "Free trial",
                 "Personal chats",
                 "1-on-1 calls",
-                "97% satisfaction rate"
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <span className="text-green-600 text-lg">✔</span>
@@ -176,7 +265,7 @@ const Home = () => {
             </div>
 
             {/* CTA Button */}
-            <button className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105">
+            <button onClick={() => router.push("/search")} className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105">
               Find a mentor →
             </button>
           </div>
@@ -189,7 +278,7 @@ const Home = () => {
 
           {/* Section Title */}
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#142245] mb-10">
-            Explore 900+ available mentors
+            Explore available mentors
           </h2>
 
           {/* Mentor Categories */}
@@ -221,55 +310,7 @@ const Home = () => {
       </section>
 
       <section className="bg-[#142245] py-16 px-4 sm:px-8 lg:px-16 text-white">
-        <div className="container mx-auto text-center max-w-6xl">
 
-          {/* Header */}
-          <h2 className="text-2xl sm:text-3xl font-extrabold">
-            Not sure if mentorship is right for you?
-          </h2>
-          <p className="mt-2 text-base sm:text-lg">
-            A quick, easy call with an expert is just one click away with our attractive one-off sessions.
-          </p>
-
-          {/* Mentor Session Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-            {[
-              {
-                title: "Introductory Call",
-                desc: "If you're looking for a mentor and you're not sure about how this all works – this should be your first call.",
-                duration: "Approx. 30 minutes",
-                price: "$39",
-              },
-              {
-                title: "Study Plan",
-                desc: "Looking to learn a new skill? A mentor can help you set up a custom study plan to follow.",
-                duration: "Approx. 45 minutes",
-                price: "$39",
-              },
-              {
-                title: "Interview Preparation",
-                desc: "Some big interviews coming up? Get help from an experienced mentor in a mock interview session.",
-                duration: "Approx. 60 minutes",
-                price: "$99",
-              },
-            ].map((session, index) => (
-              <div key={index} className="bg-white text-black p-6 rounded-lg shadow-md transition-all hover:shadow-lg">
-                <h3 className="text-lg sm:text-xl font-semibold">{session.title}</h3>
-                <p className="text-gray-600 mt-2 text-sm sm:text-base">{session.desc}</p>
-                <p className="mt-4 font-semibold text-green-600">{session.duration}</p>
-                <p className="text-lg font-bold">{session.price}</p>
-                <button className="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  Explore →
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Show More Button */}
-          <button className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700">
-            Show me more
-          </button>
-        </div>
 
         {/* Testimonials Section */}
         <div className="container mx-auto mt-20 max-w-6xl">
@@ -283,80 +324,31 @@ const Home = () => {
               <p className="mt-2 text-gray-300 text-sm sm:text-base">
                 We've already delivered 1-on-1 mentorship to thousands of students, professionals, and executives.
               </p>
-              <button className="mt-4 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+              <button onClick={() => router.push("/search")} className="mt-4 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
                 Find a mentor
               </button>
             </div>
 
-            {/* Right Side - Testimonial Cards */}
             <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {[
-                {
-                  name: "Arjun",
-                  role: "Leadership Mentee",
-                  quote: "Amazing mentor! She is supportive and knowledgeable with extensive experience.",
-                },
-                {
-                  name: "Apurav",
-                  role: "Programming Mentee",
-                  quote: "Brandon has been supporting me with a software engineering job hunt.",
-                },
-                {
-                  name: "Ramcharan",
-                  role: "Web Development Mentee",
-                  quote: "Sandrine helped me improve as an engineer. A huge step beyond my expectations.",
-                },
-                {
-                  name: "Aksith",
-                  role: "Java Mentee",
-                  quote: "Amit is the best mentor I have ever met. He helps to solve almost any problem.",
-                },
-                {
-                  name: "Sharan",
-                  role: "Business Mentee",
-                  quote: "Drag me was the missing piece that offered me down-to-earth guidance in business.",
-                },
-                {
-                  name: "Kailash",
-                  role: "Design Mentee",
-                  quote: "Anna really helped a lot. Her mentoring was very structured and insightful.",
-                },
-              ].map((testimonial, index) => (
-                <div key={index} className="bg-white text-black p-6 rounded-lg shadow-md transition-all hover:shadow-lg">
-                  <h4 className="font-semibold">{testimonial.name}</h4>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
-                  <p className="mt-2 text-gray-700 text-sm sm:text-base">"{testimonial.quote}"</p>
+              {mentors && mentors.slice(0, 4).map((mentor, index) => (
+                <div
+                  key={index}
+                  className="bg-white text-black p-6 rounded-lg shadow-md transition-all hover:shadow-lg"
+                >
+                  <h4 className="font-semibold">{mentor.name}</h4>
+                  <p className="text-sm text-gray-500">{mentor.role}</p>
+                  <p className="mt-2 text-gray-700 text-sm sm:text-base">
+                    "{mentor.bio || 'An amazing mentor with great insights and guidance!'}"
+                  </p>
                 </div>
               ))}
             </div>
+
 
           </div>
         </div>
       </section>
 
-
-      {/* Featured Mentors Section */}
-      <section className="container mx-auto my-20 px-6">
-        <h2 className="text-4xl font-bold text-center mb-12">Featured Mentors</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-          {["Rahul Saurav", "Angelia", "David Lee"].map((mentor, index) => (
-            <motion.div
-              key={index}
-              className="p-6 border rounded-lg shadow-lg hover:shadow-xl transition-transform transform hover:-translate-y-1 bg-white"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.2 }}
-            >
-              <img src={`/mentor${index + 1}.jpg`} alt={mentor} className="w-24 h-24 mx-auto rounded-full mb-4" />
-              <h3 className="text-2xl font-semibold">{mentor}</h3>
-              <p className="text-gray-600 text-lg">{index === 0 ? "Software Engineer at Google" : index === 1 ? "Product Manager at Amazon" : "Data Scientist at Facebook"}</p>
-              <button className="mt-4 bg-blue-600 text-white px-5 py-2 rounded-md text-lg font-medium hover:bg-blue-700 transition">View Profile</button>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* 🔥 Mentor Pricing Section */}
       <section className="bg-gradient-to-b from-[#e0f0f8] to-[#a6d5d8] py-16 px-4 sm:px-6 lg:px-8 text-center">
         {/* Header */}
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#142245] leading-tight">
@@ -370,79 +362,82 @@ const Home = () => {
 
         {/* Mentor Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-          {mentors.map((mentor, index) => (
-            <div
-              key={index}
-              className="bg-white shadow-lg rounded-lg p-5 sm:p-6 text-left border border-gray-200 transition-transform transform hover:scale-105 duration-200"
-            >
-              {/* Mentor Name & Role */}
-              <h3 className="text-lg font-semibold text-gray-900">{mentor.name}</h3>
-              <p className="text-gray-500 text-sm">{mentor.role}</p>
+          {mentors && mentors.map((mentor, index) => (
+            <Link href={`/profile/${mentor._id}`} key={index}>
+              <div
+                key={index}
+                className="bg-white shadow-lg rounded-lg p-5 sm:p-6 text-left border border-gray-200 transition-transform transform hover:scale-105 duration-200"
+              >
+                {/* Mentor Name & Role */}
+                <h3 className="text-lg font-semibold text-gray-900">{mentor.name}</h3>
+                <p className="text-gray-500 text-sm">{mentor.role}</p>
 
-              {/* Mentorship Price */}
-              <div className="bg-gray-100 text-green-600 text-sm font-semibold py-2 px-4 rounded-md mt-4 inline-block">
-                Mentorship {mentor.price}
+                {/* Mentorship Price */}
+                <div className="bg-gray-100 text-green-600 text-sm font-semibold py-2 px-4 rounded-md mt-4 inline-block">
+                  Mentorship &#8377;
+                  {mentor.fees}
+                </div>
               </div>
-
-              {/* Services */}
-              <div className="mt-4 space-y-2">
-                {mentor.services.map((service, i) => (
-                  <div key={i} className="flex justify-between bg-gray-100 p-2 rounded-md text-gray-700">
-                    <span>{service.name}</span>
-                    <span className="font-semibold">{service.price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
 
-        {/* Features Section */}
         <div className="bg-white shadow-md rounded-lg mt-10 p-6 md:p-8 flex flex-wrap justify-center gap-6 md:gap-12">
-          {/* Feature 1 */}
-          <div className="flex items-center space-x-4">
+          {/* Feature 1 - Clickable */}
+          <div
+            onClick={() => router.push("/search")}
+            className="flex items-center space-x-4 cursor-pointer hover:bg-gray-100 p-3 rounded-md transition"
+          >
             <FaSearch className="text-blue-500 text-2xl" />
             <div>
               <h4 className="font-semibold text-gray-900">Free Trial</h4>
               <p className="text-gray-600 text-sm">Get a free trial with every mentor</p>
             </div>
           </div>
-
-          {/* Feature 2 */}
-          <div className="flex items-center space-x-4">
-            <FaEdit className="text-green-500 text-2xl" />
-            <div>
-              <h4 className="font-semibold text-gray-900">No Strings</h4>
-              <p className="text-gray-600 text-sm">Cancel anytime</p>
-            </div>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="flex items-center space-x-4">
-            <FaChartBar className="text-yellow-500 text-2xl" />
-            <div>
-              <h4 className="font-semibold text-gray-900">Fully Vetted</h4>
-              <p className="text-gray-600 text-sm">We demand the highest quality service</p>
-            </div>
-          </div>
         </div>
 
-        {/* Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button className="bg-[#142245] text-white py-3 px-6 rounded-md text-lg font-medium hover:bg-[#0f1a33] transition duration-200">
-            Find my mentor
-          </button>
-          <a href="#" className="text-[#142245] font-medium hover:underline text-lg">
-            Become a Mentor
-          </a>
+          {typeof window !== "undefined" && sessionStorage.getItem("role") === "mentor" ? (
+            <>
+              <button
+                onClick={() => router.push("/search")}
+                className="bg-[#142245] text-white py-3 px-6 rounded-md text-lg font-medium hover:bg-[#0f1a33] transition duration-200"
+              >
+                Find my mentee
+              </button>
+              <button
+                onClick={() => router.push("/login")}
+                className="text-[#142245] font-medium hover:underline text-lg bg-transparent border-none p-0"
+              >
+                Become a Mentee
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => router.push("/search")}
+                className="bg-[#142245] text-white py-3 px-6 rounded-md text-lg font-medium hover:bg-[#0f1a33] transition duration-200"
+              >
+                Find my mentor
+              </button>
+              <button
+                onClick={() => router.push("/login")}
+                className="text-[#142245] font-medium hover:underline text-lg bg-transparent border-none p-0"
+              >
+                Become a Mentor
+              </button>
+            </>
+          )}
         </div>
+
       </section>
 
 
       {/* Footer */}
-      <footer className="bg-gray-100 text-gray-700 py-12">
+      <footer className="bg-gray-100 text-gray-700 py-12 ">
         <div className="container mx-auto px-6 md:px-12 lg:px-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 mx-auto gap-8"> */}
+          <div className="flex justify-between gap-8">
 
             {/* Left Section - Title, Tagline, Social Icons */}
             <div className="col-span-2">
@@ -453,33 +448,14 @@ const Home = () => {
               {/* Social Icons */}
               <div className="flex space-x-4 mt-4">
                 <a href="#" className="text-gray-500 hover:text-gray-800 transition text-xl">
-                  <FaFacebookF />
-                </a>
-                <a href="#" className="text-gray-500 hover:text-gray-800 transition text-xl">
-                  <FaInstagram />
-                </a>
-                <a href="#" className="text-gray-500 hover:text-gray-800 transition text-xl">
-                  <FaXTwitter />
-                </a>
-                <a href="#" className="text-gray-500 hover:text-gray-800 transition text-xl">
                   <FaLinkedinIn />
                 </a>
               </div>
             </div>
-
-            {/* Right Section - Navigation Columns */}
             {[
               {
                 title: "PLATFORM",
-                links: ["Browse Mentors", "Book a Session", "Become a Mentor", "Mentorship for Teams", "Testimonials"],
-              },
-              {
-                title: "RESOURCES",
-                links: ["Newsletter", "Books", "Perks", "Templates", "Career Paths", "Blog"],
-              },
-              {
-                title: "COMPANY",
-                links: ["About", "Case Studies", "Partner Program", "Code of Conduct", "Privacy Policy", "DMCA"],
+                links: ["Browse Mentors", "Book a Session", "Become a Mentor"],
               },
 
             ].map((section, index) => (
@@ -513,7 +489,6 @@ const Home = () => {
 
           </div>
 
-          {/* Copyright */}
           <div className="text-center text-gray-500 text-sm mt-10">
             &copy; 2025 Guidance Hub. All Rights Reserved.
           </div>

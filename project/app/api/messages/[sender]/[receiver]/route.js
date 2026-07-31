@@ -17,7 +17,11 @@ export async function GET(req, { params }) {
                 content: msg.content,
                 sender: msg.sender,
                 receiver: msg.receiver,
-                timestamp: msg.timestamp
+                timestamp: msg.timestamp,
+                room: msg.room,
+                fileUrl: msg.fileUrl,
+                fileName: msg.fileName,
+                fileType: msg.fileType
             }
         })
 
@@ -26,7 +30,11 @@ export async function GET(req, { params }) {
                 content: msg.content,
                 sender: msg.sender,
                 receiver: msg.receiver,
-                timestamp: msg.timestamp
+                timestamp: msg.timestamp,
+                room: msg.room,
+                fileUrl: msg.fileUrl,
+                fileName: msg.fileName,
+                fileType: msg.fileType
             }
         })
 
@@ -36,6 +44,7 @@ export async function GET(req, { params }) {
         ]
         // console.log(combined_data);
         // console.log(data);
+        // console.log(data2);
         return NextResponse.json(combined_data, { status: 200 });
 
     } catch (e) {

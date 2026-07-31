@@ -23,8 +23,12 @@ export default function Home() {
         const email = sessionStorage.getItem('email');
         if (!email) {
             // Redirect to login page
-            router.push('/login');
-            return;
+            // router.push('/login');
+            // return;
+            const guest = sessionStorage.getItem('guest');
+            if (!guest) {
+                sessionStorage.setItem('guest', '1');
+            }
         }
 
         const fetchMentors = async () => {
@@ -122,7 +126,7 @@ export default function Home() {
                     ) : (
                         <div className="grid grid-cols-1 gap-4">
                             {filteredMentors.map((mentor) => (
-                                <div key={mentor.id} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100">
+                                <div key={mentor._id} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100">
                                     <div className="flex items-center">
                                         <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
                                             <span className="text-blue-500 font-bold">{mentor.name ? mentor.name.charAt(0) : '?'}</span>

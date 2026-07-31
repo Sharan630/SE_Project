@@ -1,6 +1,7 @@
 import connectdb from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
+import BlockedUser from "@/models/blockeduser";
 
 export async function DELETE(req, {params}) {
     try {
@@ -13,6 +14,12 @@ export async function DELETE(req, {params}) {
         }
 
         const deletedUser = await User.findOneAndDelete({ email });
+
+        const blocked = new BlockedUser({
+            email: email
+        })
+
+        await blocked.save();
 
         if (!deletedUser) {
             return NextResponse.json({ message: "User not found" }, { status: 404 });
