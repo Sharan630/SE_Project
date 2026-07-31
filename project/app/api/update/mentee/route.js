@@ -1,20 +1,19 @@
 import connectdb from "@/database/connectdb";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
-import bcrypt from "bcrypt";
-
 
 export async function POST(req) {
     try {
-
         await connectdb();
 
-        const { name, skills, picture, bio, phone, email, linkedin } = await req.json();
-        if (!name) {
-            return NextResponse.json({ message: "provide parameters" }, { status: 404 });
+        const body = await req.json();
+        const { name, skills, picture, bio, phone, email, linkedin } = body;
+
+        if (!email || !name) {
+            return NextResponse.json({ message: "Email and Name are required" }, { status: 400 });
         }
 
-        const mentee = await User.findOne({ email, role: "mentee" });
+        const mentee = await User.findOne({ email: email.trim() });
         if (!mentee) {
             return NextResponse.json({ message: "Mentee not found" }, { status: 404 });
         }
@@ -33,8 +32,7 @@ export async function POST(req) {
             mentee
         }, { status: 200 });
 
-
     } catch (err) {
         return NextResponse.json({ message: err.message }, { status: 500 });
     }
-}
+}

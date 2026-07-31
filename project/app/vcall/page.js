@@ -104,8 +104,15 @@ export default function VideoCallInterface() {
         setCallStatus("calling");
 
         try {
-            // Get recipient user ID
-            const res = await axios.get(`/api/user/${calleeId}`);
+            const targetCallee = calleeId.trim();
+            const res = await axios.get(`/api/user/${encodeURIComponent(targetCallee)}`);
+            
+            if (!res.data || !res.data._id) {
+                alert("Recipient user not found. Please verify the email address.");
+                setCallStatus("idle");
+                return;
+            }
+            
             const recipientId = res.data._id;
 
             const callParams = {
