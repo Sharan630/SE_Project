@@ -109,21 +109,34 @@ export default function EditProfile() {
 
         if (user.phone && user.phone.length > 0 && user.phone.length !== 10) {
             console.warn("[EDIT PROFILE] Validation failed: Phone number length is not 10 digits");
-            setStatusMessage({ type: "error", text: "Phone number must be exactly 10 digits." });
+            const msg = "Phone number must be exactly 10 digits.";
+            alert(msg);
+            setStatusMessage({ type: "error", text: msg });
             return;
         }
 
-        const rawRole = sessionStorage.getItem('role') || user.role;
+        const rawRole = sessionStorage.getItem('role') || localStorage.getItem('role') || user.role;
         console.log("[EDIT PROFILE] Raw role resolved:", rawRole);
 
         if (!rawRole) {
             console.error("[EDIT PROFILE] Validation failed: Role not identified");
-            setStatusMessage({ type: "error", text: "User role not identified. Please log in again." });
+            const msg = "User role not identified. Please log in again.";
+            alert(msg);
+            setStatusMessage({ type: "error", text: msg });
             return;
         }
 
         const normalizedRole = rawRole.toLowerCase().trim();
         console.log("[EDIT PROFILE] Normalized role for API route:", normalizedRole);
+
+        const currentEmail = user.email || sessionStorage.getItem("email") || localStorage.getItem("email");
+        if (!currentEmail) {
+            console.error("[EDIT PROFILE] Validation failed: Email missing");
+            const msg = "Email not found. Please log in again.";
+            alert(msg);
+            setStatusMessage({ type: "error", text: msg });
+            return;
+        }
 
         try {
             setSaving(true);
@@ -138,7 +151,7 @@ export default function EditProfile() {
                 imageUrl = imgRes.data.imageUrl;
             }
 
-            const updatedUser = { ...user, picture: imageUrl };
+            const updatedUser = { ...user, email: currentEmail, picture: imageUrl };
             const updateUrl = `/api/update/${normalizedRole}`;
             console.log(`[EDIT PROFILE] Posting update to URL: ${updateUrl} with body:`, updatedUser);
 
@@ -147,13 +160,16 @@ export default function EditProfile() {
             
             setUser(updatedUser);
             setStatusMessage({ type: "success", text: "Profile updated successfully!" });
+            alert("Profile updated successfully!");
         } catch (err) {
             console.error("[EDIT PROFILE] Profile update failed:", err);
             console.error("[EDIT PROFILE] Error response data:", err.response?.data);
             console.error("[EDIT PROFILE] Error status code:", err.response?.status);
+            const errMsg = err.response?.data?.message || err.message || "Failed to update profile. Please try again.";
+            alert("Update failed: " + errMsg);
             setStatusMessage({ 
                 type: "error", 
-                text: err.response?.data?.message || err.message || "Failed to update profile. Please try again." 
+                text: errMsg 
             });
         } finally {
             setSaving(false);

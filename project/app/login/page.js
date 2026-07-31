@@ -35,14 +35,29 @@ const Login = () => {
             const res = await axios.post(isSignUp ? "/api/signup" : "/api/login", payload);
 
             if ([200, 201].includes(res.status)) {
-                sessionStorage.setItem("email", email);
+                const userEmail = email.trim();
+                sessionStorage.setItem("email", userEmail);
+                localStorage.setItem("email", userEmail);
                 sessionStorage.setItem("pass", pass);
-                const userRole = res.data?.user?.role || role;
-                if (userRole) sessionStorage.setItem("role", userRole);
-                if (res.data?.user?.name) sessionStorage.setItem("name", res.data.user.name);
+                localStorage.setItem("pass", pass);
 
-                alert(isSignUp ? "Signed up successfully" : "Logged in successfully");
-                router.push("/home");
+                const userRole = (res.data?.user?.role || role || "").toLowerCase();
+                if (userRole) {
+                    sessionStorage.setItem("role", userRole);
+                    localStorage.setItem("role", userRole);
+                }
+                if (res.data?.user?.name) {
+                    sessionStorage.setItem("name", res.data.user.name);
+                    localStorage.setItem("name", res.data.user.name);
+                }
+
+                alert(isSignUp ? "Signed up successfully! Please complete your registration." : "Logged in successfully!");
+                
+                if (isSignUp) {
+                    router.push("/register");
+                } else {
+                    router.push("/home");
+                }
             } else {
                 alert(res.data?.message || "Authentication failed.");
             }

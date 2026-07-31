@@ -28,22 +28,18 @@ const Form = () => {
     const router = useRouter();
 
     useEffect(() => {
-        const email = sessionStorage.getItem('email');
-        const name = sessionStorage.getItem('name');
-        const role = sessionStorage.getItem('role');
+        const storedEmail = sessionStorage.getItem('email') || localStorage.getItem('email');
+        const storedRole = sessionStorage.getItem('role') || localStorage.getItem('role');
 
-        if (!email) {
+        if (!storedEmail) {
+            console.warn("[REGISTER PAGE] No email found in storage, redirecting to /login");
             router.push('/login');
             return;
         }
 
-        if (name && name !== 'undefined') {
-            router.push('/home');
-            return;
+        if (storedRole) {
+            setRole(storedRole.toLowerCase().trim());
         }
-
-        setRole(role);
-        // console.log("name: ", name);
     }, [router]);
 
     const handleAddSkill = () => {
@@ -159,13 +155,19 @@ const Form = () => {
                 }
                 setUploading(false);
             }
-            const email = sessionStorage.getItem('email');
-            // console.log(role);
-            const response = await axios.post(`/api/registration/${role}`, {
+            const email = sessionStorage.getItem('email') || localStorage.getItem('email');
+            const targetRole = (role || sessionStorage.getItem('role') || localStorage.getItem('role') || '').toLowerCase().trim();
+
+            if (!targetRole) {
+                alert("Role missing. Please re-login.");
+                return;
+            }
+
+            const response = await axios.post(`/api/registration/${targetRole}`, {
                 name,
                 email,
                 password,
-                role,
+                role: targetRole,
                 phone,
                 bio,
                 fees,
@@ -177,10 +179,12 @@ const Form = () => {
 
             console.log('Registration successful:', response.data);
             sessionStorage.setItem('phone', phone);
-
+            localStorage.setItem('phone', phone);
             sessionStorage.setItem('name', name);
+            localStorage.setItem('name', name);
             sessionStorage.setItem('registered', 'true');
-            alert('Registration successful');
+            localStorage.setItem('registered', 'true');
+            alert('Registration successful!');
             router.push('/home');
         } catch (error) {
             console.error('Registration failed:', error);
