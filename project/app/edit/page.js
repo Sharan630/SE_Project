@@ -44,8 +44,10 @@ export default function EditProfile() {
 
     useEffect(() => {
         const email = sessionStorage.getItem("email") || localStorage.getItem("email");
+        console.log("[EDIT PROFILE] Retrieved email from storage:", email);
 
         if (!email) {
+            console.warn("[EDIT PROFILE] No email found in storage, redirecting to /login");
             router.push('/login');
             return;
         }
@@ -53,17 +55,21 @@ export default function EditProfile() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
+                console.log("[EDIT PROFILE] Fetching user profile for email:", email);
                 const res = await axios.get(`/api/user/${encodeURIComponent(email)}`);
+                console.log("[EDIT PROFILE] Received user data:", res.data);
                 if (res.data) {
                     setUser({
                         ...res.data,
                         skills: Array.isArray(res.data.skills) ? res.data.skills : [],
                         availability: Array.isArray(res.data.availability) ? res.data.availability : []
                     });
+                } else {
+                    console.error("[EDIT PROFILE] User data is empty/null from API");
                 }
             } catch (error) {
-                console.error("Failed to fetch user:", error);
-                setStatusMessage({ type: "error", text: "Failed to load user profile." });
+                console.error("[EDIT PROFILE] Failed to fetch user profile:", error);
+                setStatusMessage({ type: "error", text: "Failed to load user profile from database." });
             } finally {
                 setLoading(false);
             }
@@ -99,39 +105,55 @@ export default function EditProfile() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setStatusMessage(null);
+        console.log("[EDIT PROFILE] handleSubmit triggered. Current user state:", user);
 
         if (user.phone && user.phone.length > 0 && user.phone.length !== 10) {
+            console.warn("[EDIT PROFILE] Validation failed: Phone number length is not 10 digits");
             setStatusMessage({ type: "error", text: "Phone number must be exactly 10 digits." });
             return;
         }
 
-        const role = sessionStorage.getItem('role') || user.role;
-        if (!role) {
-            setStatusMessage({ type: "error", text: "User role not identified. Please re-login." });
+        const rawRole = sessionStorage.getItem('role') || user.role;
+        console.log("[EDIT PROFILE] Raw role resolved:", rawRole);
+
+        if (!rawRole) {
+            console.error("[EDIT PROFILE] Validation failed: Role not identified");
+            setStatusMessage({ type: "error", text: "User role not identified. Please log in again." });
             return;
         }
+
+        const normalizedRole = rawRole.toLowerCase().trim();
+        console.log("[EDIT PROFILE] Normalized role for API route:", normalizedRole);
 
         try {
             setSaving(true);
             let imageUrl = user.picture;
 
             if (imageFile) {
+                console.log("[EDIT PROFILE] Uploading image file...");
                 const formData = new FormData();
                 formData.append("image", imageFile);
                 const imgRes = await axios.post("/api/imgupload", formData);
+                console.log("[EDIT PROFILE] Image uploaded successfully. URL:", imgRes.data?.imageUrl);
                 imageUrl = imgRes.data.imageUrl;
             }
 
             const updatedUser = { ...user, picture: imageUrl };
-            const res = await axios.post(`/api/update/${role}`, updatedUser);
+            const updateUrl = `/api/update/${normalizedRole}`;
+            console.log(`[EDIT PROFILE] Posting update to URL: ${updateUrl} with body:`, updatedUser);
+
+            const res = await axios.post(updateUrl, updatedUser);
+            console.log("[EDIT PROFILE] API update response:", res.data);
             
             setUser(updatedUser);
             setStatusMessage({ type: "success", text: "Profile updated successfully!" });
         } catch (err) {
-            console.error("Profile update failed:", err);
+            console.error("[EDIT PROFILE] Profile update failed:", err);
+            console.error("[EDIT PROFILE] Error response data:", err.response?.data);
+            console.error("[EDIT PROFILE] Error status code:", err.response?.status);
             setStatusMessage({ 
                 type: "error", 
-                text: err.response?.data?.message || "Failed to update profile. Please try again." 
+                text: err.response?.data?.message || err.message || "Failed to update profile. Please try again." 
             });
         } finally {
             setSaving(false);
