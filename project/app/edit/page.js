@@ -2,8 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import axios from "axios";
+import { 
+    User, 
+    Mail, 
+    Phone, 
+    Linkedin, 
+    Briefcase, 
+    Award, 
+    DollarSign, 
+    Camera, 
+    Calendar, 
+    CheckCircle, 
+    AlertCircle,
+    ArrowLeft,
+    Sparkles,
+    Loader2
+} from "lucide-react";
 
 export default function EditProfile() {
     const [user, setUser] = useState({
@@ -15,41 +30,40 @@ export default function EditProfile() {
         phone: "",
         availability: [],
         fees: "",
-        linkedin: ""
+        linkedin: "",
+        role: ""
     });
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [imageFile, setImageFile] = useState(null);
     const [preview, setPreview] = useState(null);
+    const [activeTab, setActiveTab] = useState("personal");
+    const [statusMessage, setStatusMessage] = useState(null); // { type: 'success' | 'error', text: '' }
 
     const router = useRouter();
 
-
     useEffect(() => {
-        const email = sessionStorage.getItem("email");
-        const name = sessionStorage.getItem("name");
+        const email = sessionStorage.getItem("email") || localStorage.getItem("email");
 
         if (!email) {
             router.push('/login');
             return;
         }
 
-        if (!name) {
-            router.push('/register');
-            return;
-        }
-
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get(`/api/user/${email}`);
-                setUser({
-                    ...res.data,
-                    skills: Array.isArray(res.data.skills) ? res.data.skills : [],
-                    availability: Array.isArray(res.data.availability) ? res.data.availability : []
-                });
-                console.log(res.data);
+                const res = await axios.get(`/api/user/${encodeURIComponent(email)}`);
+                if (res.data) {
+                    setUser({
+                        ...res.data,
+                        skills: Array.isArray(res.data.skills) ? res.data.skills : [],
+                        availability: Array.isArray(res.data.availability) ? res.data.availability : []
+                    });
+                }
             } catch (error) {
-                console.error(error);
+                console.error("Failed to fetch user:", error);
+                setStatusMessage({ type: "error", text: "Failed to load user profile." });
             } finally {
                 setLoading(false);
             }
@@ -57,7 +71,6 @@ export default function EditProfile() {
 
         fetchUser();
     }, [router]);
-
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
@@ -76,216 +89,365 @@ export default function EditProfile() {
         }
     };
 
-
-    const handleAvailabilityChange = (day, timeSlots) => {
+    const handleAvailabilityChange = (day, timeSlotsStr) => {
         const updatedAvailability = user.availability.filter(a => a.day !== day);
-        updatedAvailability.push({ day, timeSlots: timeSlots.split(",").map(slot => slot.trim()) });
+        const slots = timeSlotsStr.split(",").map(slot => slot.trim()).filter(Boolean);
+        updatedAvailability.push({ day, timeSlots: slots });
         setUser({ ...user, availability: updatedAvailability });
     };
 
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-
-    //     if (user.phone && user.phone.length !== 10) {
-    //         alert("Phone number must be exactly 10 digits.");
-    //         return;
-    //     }
-
-    //     if (user.password && user.password.length < 6) {
-    //         alert("Password must be at least 6 characters long.");
-    //         return;
-    //     }
-
-    //     const role = sessionStorage.getItem('role');
-
-    //     try {
-    //         const res = await axios.post(/api/update/${role}, user);
-    //         alert("Profile updated successfully!");
-    //     } catch (err) {
-    //         console.error(err);
-    //         alert("Failed to update profile. Please try again later.");
-    //     }
-    // };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setStatusMessage(null);
 
-        if (user.phone && user.phone.length !== 10) {
-            alert("Phone number must be exactly 10 digits.");
+        if (user.phone && user.phone.length > 0 && user.phone.length !== 10) {
+            setStatusMessage({ type: "error", text: "Phone number must be exactly 10 digits." });
             return;
         }
 
         const role = sessionStorage.getItem('role') || user.role;
         if (!role) {
-            alert("User role not identified. Please re-login.");
+            setStatusMessage({ type: "error", text: "User role not identified. Please re-login." });
             return;
         }
 
         try {
+            setSaving(true);
             let imageUrl = user.picture;
 
             if (imageFile) {
                 const formData = new FormData();
                 formData.append("image", imageFile);
-
                 const imgRes = await axios.post("/api/imgupload", formData);
                 imageUrl = imgRes.data.imageUrl;
             }
 
             const updatedUser = { ...user, picture: imageUrl };
-
-            const res = await axios.post(`/api/update/${ role }`, updatedUser);
-            alert("Profile updated successfully!");
+            const res = await axios.post(`/api/update/${role}`, updatedUser);
+            
+            setUser(updatedUser);
+            setStatusMessage({ type: "success", text: "Profile updated successfully!" });
         } catch (err) {
-            console.error(err);
-            alert("Failed to update profile. Please try again later.");
+            console.error("Profile update failed:", err);
+            setStatusMessage({ 
+                type: "error", 
+                text: err.response?.data?.message || "Failed to update profile. Please try again." 
+            });
+        } finally {
+            setSaving(false);
         }
     };
 
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
+                <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
+                <p className="text-slate-400 font-medium animate-pulse">Loading profile settings...</p>
+            </div>
+        );
+    }
+
+    const isMentor = user.role === "mentor";
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[url('/editbg.jpeg')] bg-cover bg-center p-4">
-            <div className="w-full max-w-md bg-white bg-opacity-20 backdrop-blur-lg shadow-lg rounded-lg p-6">
-                <h2 className="text-2xl font-semibold text-center text-black mb-4">Edit Profile</h2>
-                <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70vh]" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                    <div>
-                        <label className="block text-black py-2 font-bold">Name</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={user.name || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-50 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                        />
-                    </div>
-                    {/*                     
-                    <div>
-                        <label className="block text-black py-2 font-bold">Profile Picture URL</label>
-                        <input
-                            type="file"
-                            name="picture"
-                            value={user.picture || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                        />
-                    </div> */}
-                    <div>
-                        <label className="block text-black py-2 font-bold">Profile Picture</label>
-                        {preview || user.picture ? (
-                            <img
-                                src={preview || user.picture}
-                                alt="Profile Preview"
-                                className="h-24 w-24 object-cover rounded-full mb-2"
-                            />
-                        ) : null}
-                        <input
-                            type="file"
-                            name="picture"
-                            accept="image/*"
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black"
-                        />
-                    </div>
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex justify-center py-10 px-4 relative overflow-hidden">
+            {/* Background Decorative Blur Orbs */}
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
 
-
-                    <div>
-                        <label className="block text-black py-2 font-bold">Bio</label>
-                        <textarea
-                            name="bio"
-                            value={user.bio || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            rows={3}
-                        />
+            <div className="w-full max-w-3xl relative z-10 space-y-6">
+                {/* Top Navigation */}
+                <div className="flex items-center justify-between">
+                    <button 
+                        onClick={() => router.back()} 
+                        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium bg-slate-900/60 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-800"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Back
+                    </button>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 border border-slate-800 rounded-full text-xs font-semibold tracking-wide text-indigo-400">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{user.role ? user.role.toUpperCase() : "PROFILE"}</span>
                     </div>
+                </div>
 
-                    <div>
-                        <label className="block text-black py-2 font-bold">Skills (comma-separated)</label>
-                        <input
-                            type="text"
-                            name="skills"
-                            value={user.skills?.join(", ") || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-black py-2 font-bold">Experience (years)</label>
-                        <input
-                            type="text"
-                            name="experience"
-                            value={user.experience || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-black py-2 font-bold">Phone</label>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={user.phone || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            maxLength={10}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-black py-2 font-bold">LinkedIn Profile</label>
-                        <input
-                            type="text"
-                            name="linkedin"
-                            value={user.linkedin || ""}
-                            onChange={handleChange}
-                            className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                        />
-                    </div>
-
-                    {user.role === "mentor" && (
-                        <div>
-                            <label className="block text-black py-2 font-bold">Fees</label>
-                            <input
-                                type="text"
-                                name="fees"
-                                value={user.fees || ""}
-                                onChange={handleChange}
-                                className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
-                            />
+                {/* Profile Header Card */}
+                <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                        {/* Avatar Upload Container */}
+                        <div className="relative group">
+                            <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-indigo-500/50 shadow-xl bg-slate-800 flex items-center justify-center text-slate-500">
+                                {preview || user.picture ? (
+                                    <img 
+                                        src={preview || user.picture} 
+                                        alt={user.name || "Profile"} 
+                                        className="w-full h-full object-cover" 
+                                    />
+                                ) : (
+                                    <User className="w-12 h-12" />
+                                )}
+                            </div>
+                            <label className="absolute bottom-0 right-0 bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-full cursor-pointer shadow-lg transition-transform transform hover:scale-105 border-2 border-slate-900">
+                                <Camera className="w-4 h-4" />
+                                <input 
+                                    type="file" 
+                                    name="picture" 
+                                    accept="image/*" 
+                                    onChange={handleChange} 
+                                    className="hidden" 
+                                />
+                            </label>
                         </div>
-                    )}
 
-                    {user.role === "mentor" && (
-                        <div>
-                            <label className="block text-black py-2 font-bold">Availability</label>
-                            {daysOfWeek.map((day) => (
-                                <div key={day} className="mb-2">
-                                    <label className="inline-block mr-2">{day}:</label>
+                        {/* Info Header */}
+                        <div className="text-center sm:text-left space-y-1">
+                            <h1 className="text-2xl font-bold text-white tracking-tight">{user.name || "Your Name"}</h1>
+                            <p className="text-slate-400 text-sm flex items-center justify-center sm:justify-start gap-1.5">
+                                <Mail className="w-3.5 h-3.5 text-indigo-400" />
+                                {user.email}
+                            </p>
+                            <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
+                                <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs rounded-full font-medium">
+                                    {isMentor ? "Mentor" : "Mentee"} Account
+                                </span>
+                                {user.phone && (
+                                    <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs rounded-full font-medium">
+                                        +91 {user.phone}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Alert Message */}
+                {statusMessage && (
+                    <div className={`p-4 rounded-2xl border flex items-center gap-3 backdrop-blur-md animate-fade-in ${
+                        statusMessage.type === 'success' 
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                    }`}>
+                        {statusMessage.type === 'success' ? (
+                            <CheckCircle className="w-5 h-5 shrink-0 text-emerald-400" />
+                        ) : (
+                            <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
+                        )}
+                        <p className="text-sm font-medium">{statusMessage.text}</p>
+                    </div>
+                )}
+
+                {/* Form Card */}
+                <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8">
+                    {/* Form Tabs */}
+                    <div className="flex border-b border-slate-800 mb-6 gap-6">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("personal")}
+                            className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+                                activeTab === "personal" 
+                                    ? "border-indigo-500 text-indigo-400" 
+                                    : "border-transparent text-slate-400 hover:text-slate-200"
+                            }`}
+                        >
+                            Personal Details
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("professional")}
+                            className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+                                activeTab === "professional" 
+                                    ? "border-indigo-500 text-indigo-400" 
+                                    : "border-transparent text-slate-400 hover:text-slate-200"
+                            }`}
+                        >
+                            Professional & Skills
+                        </button>
+                        {isMentor && (
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("availability")}
+                                className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+                                    activeTab === "availability" 
+                                        ? "border-indigo-500 text-indigo-400" 
+                                        : "border-transparent text-slate-400 hover:text-slate-200"
+                                }`}
+                            >
+                                Availability Schedule
+                            </button>
+                        )}
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Tab 1: Personal Details */}
+                        {activeTab === "personal" && (
+                            <div className="space-y-5">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <User className="w-3.5 h-3.5 text-indigo-400" /> Full Name
+                                    </label>
                                     <input
                                         type="text"
-                                        placeholder="9:00 AM, 2:00 PM, 6:00 PM"
-                                        value={user.availability.find(a => a.day === day)?.timeSlots.join(", ") || ""}
-                                        onChange={(e) => handleAvailabilityChange(day, e.target.value)}
-                                        className="w-full bg-white bg-opacity-30 text-black p-2 rounded border-2 border-black focus:outline-none focus:ring focus:ring-blue-100"
+                                        name="name"
+                                        value={user.name || ""}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Alex Johnson"
+                                        className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600"
                                     />
                                 </div>
-                            ))}
-                        </div>
-                    )}
 
-                    <button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-                    >
-                        Update Profile
-                    </button>
-                </form>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <Phone className="w-3.5 h-3.5 text-indigo-400" /> Phone Number (10 Digits)
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={user.phone || ""}
+                                        onChange={handleChange}
+                                        placeholder="e.g. 9876543210"
+                                        maxLength={10}
+                                        className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <Linkedin className="w-3.5 h-3.5 text-indigo-400" /> LinkedIn Profile URL
+                                    </label>
+                                    <input
+                                        type="url"
+                                        name="linkedin"
+                                        value={user.linkedin || ""}
+                                        onChange={handleChange}
+                                        placeholder="https://linkedin.com/in/username"
+                                        className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        Bio & About Yourself
+                                    </label>
+                                    <textarea
+                                        name="bio"
+                                        value={user.bio || ""}
+                                        onChange={handleChange}
+                                        rows={4}
+                                        placeholder="Write a brief overview about yourself, goals, or expectations..."
+                                        className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600 resize-none"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Professional Details */}
+                        {activeTab === "professional" && (
+                            <div className="space-y-5">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <Award className="w-3.5 h-3.5 text-indigo-400" /> Skills (Comma Separated)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="skills"
+                                        value={user.skills?.join(", ") || ""}
+                                        onChange={handleChange}
+                                        placeholder="React, Next.js, Node.js, Python, UI/UX"
+                                        className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600"
+                                    />
+                                    {/* Skills Badge Preview */}
+                                    {user.skills?.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {user.skills.map((skill, index) => (
+                                                skill && (
+                                                    <span key={index} className="px-3 py-1 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs rounded-lg font-medium">
+                                                        {skill}
+                                                    </span>
+                                                )
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <Briefcase className="w-3.5 h-3.5 text-indigo-400" /> Experience (in Years)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="experience"
+                                        value={user.experience || ""}
+                                        onChange={handleChange}
+                                        placeholder="e.g. 3"
+                                        className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600"
+                                    />
+                                </div>
+
+                                {isMentor && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                            <DollarSign className="w-3.5 h-3.5 text-indigo-400" /> Mentorship Fee (₹ per session)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="fees"
+                                            value={user.fees || ""}
+                                            onChange={handleChange}
+                                            placeholder="e.g. 500"
+                                            className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Tab 3: Availability Schedule (Mentor only) */}
+                        {activeTab === "availability" && isMentor && (
+                            <div className="space-y-4">
+                                <p className="text-xs text-slate-400 mb-2">
+                                    Set your available time slots for each day (separated by commas, e.g. <code className="text-indigo-400">10:00 AM, 02:00 PM, 06:00 PM</code>).
+                                </p>
+                                {daysOfWeek.map((day) => (
+                                    <div key={day} className="bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                        <span className="w-28 text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Calendar className="w-3.5 h-3.5 text-indigo-400" /> {day}
+                                        </span>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. 9:00 AM, 2:00 PM"
+                                            value={user.availability?.find(a => a.day === day)?.timeSlots.join(", ") || ""}
+                                            onChange={(e) => handleAvailabilityChange(day, e.target.value)}
+                                            className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white rounded-lg px-3 py-2 text-xs outline-none transition-all placeholder:text-slate-700"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Submit Button */}
+                        <div className="pt-4 border-t border-slate-800 flex justify-end">
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.99] text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Saving Changes...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-4 h-4" />
+                                        Save Profile Changes
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
-}
+}
